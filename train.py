@@ -1,12 +1,26 @@
+import os
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader, DistributedSampler
 
 from config import args
 from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
 
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    torch.cuda.set_device(rank)
 
-def main():
+def cleanup():
+    dist.destroy_process_group()
+
+def main(rank, world_size):
+    setup(rank, world_size)
+
     train_trajs = np.load('./data/{}/train_data_init.npy'.format(args.dataset), allow_pickle=True)
     test_trajs = np.load('./data/{}/outliers_data_init_{}_{}_{}.npy'.format(args.dataset, args.distance, args.fraction,
                                                                             args.obeserved_ratio), allow_pickle=True)
@@ -19,47 +33,55 @@ def main():
     labels = np.zeros(len(test_trajs))
     for i in outliers_idx:
         labels[i] = 1
-    labels = labels
 
-    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn,
+    train_sampler = DistributedSampler(train_data, num_replicas=world_size, rank=rank, shuffle=True)
+    test_sampler = DistributedSampler(test_data, num_replicas=world_size, rank=rank, shuffle=False)
+
+    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, sampler=train_sampler, collate_fn=collate_fn,
                               num_workers=8, pin_memory=True)
-    outliers_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn,
+    outliers_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, sampler=test_sampler, collate_fn=collate_fn,
                                  num_workers=8, pin_memory=True)
 
-    MST_OATD = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args)
+
+    model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args).cuda(rank)
+    model = DDP(model, device_ids=[rank])
 
     if args.task == 'train':
-
-        MST_OATD.logger.info("Start pretraining!")
+        if rank == 0:
+            model.logger.info("Start pretraining!")
 
         for epoch in range(args.pretrain_epochs):
-            MST_OATD.pretrain(epoch)
+            model.module.pretrain(epoch)
 
-        MST_OATD.train_gmm()
-        MST_OATD.save_weights_for_MSTOATD()
+        model.module.train_gmm()
+        model.module.save_weights_for_MSTOATD()
 
-        MST_OATD.logger.info("Start training!")
-        MST_OATD.load_mst_oatd()
+        if rank == 0:
+            model.logger.info("Start training!")
+
+        model.module.load_mst_oatd()
         for epoch in range(args.epochs):
-            MST_OATD.train(epoch)
+            model.module.train(epoch)
 
-    if args.task == 'test':
+    if args.task == 'test' and rank == 0:
 
-        MST_OATD.logger.info('Start testing!')
-        MST_OATD.logger.info("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
+        model.logger.info('Start testing!')
+        model.logger.info("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
               + chr(961) + " = {}".format(args.obeserved_ratio))
 
-        checkpoint = torch.load(MST_OATD.path_checkpoint, weights_only=False)
-        MST_OATD.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
-        MST_OATD.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
-        pr_auc = MST_OATD.detection()
+        checkpoint = torch.load(model.module.path_checkpoint, weights_only=False, map_location=f'cuda:{rank}')
+        model.module.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
+        model.module.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
+        pr_auc = model.module.detection()
         pr_auc = "%.4f" % pr_auc
-        MST_OATD.logger.info("PR_AUC: {}".format(pr_auc))
+        model.logger.info("PR_AUC: {}".format(pr_auc))
 
     if args.task == 'train':
-        MST_OATD.train_gmm_update()
-        z = MST_OATD.get_hidden()
-        MST_OATD.get_prob(z.cpu())
+        model.module.train_gmm_update()
+        z = model.module.get_hidden()
+        model.module.get_prob(z.cpu())
+    
+    cleanup()
 
 
 if __name__ == "__main__":
@@ -72,4 +94,5 @@ if __name__ == "__main__":
         s_token_size = 167 * 154
         t_token_size = 8640
 
-    main()
+    world_size = torch.cuda.device.count()
+    mp.spawn(main, args=(world_size,), nprocs=world_size, join=True)
