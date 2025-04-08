@@ -1,4 +1,5 @@
 import os
+import socket
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -10,8 +11,8 @@ from config import args
 from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
 
 def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
+    os.environ['MASTER_ADDR'] = os.getenv('MASTER_ADDR', 'localhost')
+    os.environ['MASTER_PORT'] = os.getenv('MASTER_PORT', '12355')
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
     torch.cuda.set_device(rank)
 
@@ -19,6 +20,10 @@ def cleanup():
     dist.destroy_process_group()
 
 def main():
+    print(f"Rank {args.rank} of {args.world_size} starting on {socket.gethostname()}")
+    print("MASTER_ADDR:", os.environ.get('MASTER_ADDR'))
+    print("MASTER_PORT:", os.environ.get('MASTER_PORT'))
+
     setup(args.rank, args.world_size)
 
     if args.dataset == 'porto':
