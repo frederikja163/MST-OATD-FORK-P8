@@ -51,7 +51,7 @@ def main(rank, world_size):
                                  num_workers=8, pin_memory=True)
 
 
-    model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args).cuda(rank)
+    model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args)
     model = DDP(model, device_ids=[rank])
 
     if args.task == 'train':
