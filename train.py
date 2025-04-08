@@ -18,8 +18,8 @@ def setup(rank, world_size):
 def cleanup():
     dist.destroy_process_group()
 
-def main(rank, world_size):
-    setup(rank, world_size)
+def main():
+    setup(args.rank, args.world_size)
 
     if args.dataset == 'porto':
         s_token_size = 51 * 119
@@ -92,5 +92,4 @@ def main(rank, world_size):
 
 
 if __name__ == "__main__":
-    world_size = torch.cuda.device_count()
-    mp.spawn(main, args=(world_size,), nprocs=world_size, join=True)
+    main()

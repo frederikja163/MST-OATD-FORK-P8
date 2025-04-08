@@ -32,6 +32,9 @@ parser.add_argument("--s2_size", type=int, default=4)
 
 parser.add_argument("--task", type=str, default='train')
 
+parser.add_argument('--rank', type=int, default=0)
+parser.add_argument('--world_size', type=int, default=1)
+
 args = parser.parse_args()
 
 # python train.py --dataset porto --batch_size 1600 --pretrain_epochs 6
