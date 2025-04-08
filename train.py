@@ -21,6 +21,14 @@ def cleanup():
 def main(rank, world_size):
     setup(rank, world_size)
 
+    if args.dataset == 'porto':
+        s_token_size = 51 * 119
+        t_token_size = 5760
+
+    elif args.dataset == 'cd':
+        s_token_size = 167 * 154
+        t_token_size = 8640
+
     train_trajs = np.load('./data/{}/train_data_init.npy'.format(args.dataset), allow_pickle=True)
     test_trajs = np.load('./data/{}/outliers_data_init_{}_{}_{}.npy'.format(args.dataset, args.distance, args.fraction,
                                                                             args.obeserved_ratio), allow_pickle=True)
@@ -85,14 +93,5 @@ def main(rank, world_size):
 
 
 if __name__ == "__main__":
-
-    if args.dataset == 'porto':
-        s_token_size = 51 * 119
-        t_token_size = 5760
-
-    elif args.dataset == 'cd':
-        s_token_size = 167 * 154
-        t_token_size = 8640
-
     world_size = torch.cuda.device_count()
     mp.spawn(main, args=(world_size,), nprocs=world_size, join=True)
