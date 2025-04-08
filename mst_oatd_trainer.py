@@ -9,6 +9,7 @@ import torch.optim as optim
 from sklearn.mixture import GaussianMixture
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Dataset
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from logging_set import get_logger
 from mst_oatd import MST_OATD
@@ -57,8 +58,11 @@ def savecheckpoint(state, file_name):
 class train_mst_oatd:
     def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, args):
 
-        self.MST_OATD_S = nn.DataParallel(MST_OATD(s_token_size, s_token_size, args)).to(args.device)
-        self.MST_OATD_T = nn.DataParallel(MST_OATD(s_token_size, t_token_size, args)).to(args.device)
+        self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args).to(args.device)
+        self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args).to(args.device)
+
+        self.MST_OATD_S = DDP(self.MST_OATD_S, device_ids=[args.rank])
+        self.MST_OATD_T = DDP(self.MST_OATD_T, device_ids=[args.rank])
 
         self.device = args.device
         self.dataset = args.dataset

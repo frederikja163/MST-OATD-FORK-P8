@@ -52,7 +52,6 @@ def main(rank, world_size):
 
 
     model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args)
-    model = DDP(model, device_ids=[rank])
 
     if args.task == 'train':
         if rank == 0:
