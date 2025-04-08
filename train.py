@@ -42,8 +42,8 @@ def main():
     for i in outliers_idx:
         labels[i] = 1
 
-    train_sampler = DistributedSampler(train_data, num_replicas=world_size, rank=rank, shuffle=True)
-    test_sampler = DistributedSampler(test_data, num_replicas=world_size, rank=rank, shuffle=False)
+    train_sampler = DistributedSampler(train_data, num_replicas=args.world_size, rank=args.rank, shuffle=True)
+    test_sampler = DistributedSampler(test_data, num_replicas=args.world_size, rank=args.rank, shuffle=False)
 
     train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, sampler=train_sampler, collate_fn=collate_fn,
                               num_workers=8, pin_memory=True)
@@ -54,7 +54,7 @@ def main():
     model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args)
 
     if args.task == 'train':
-        if rank == 0:
+        if args.rank == 0:
             model.logger.info("Start pretraining!")
 
         for epoch in range(args.pretrain_epochs):
@@ -63,20 +63,20 @@ def main():
         model.module.train_gmm()
         model.module.save_weights_for_MSTOATD()
 
-        if rank == 0:
+        if args.rank == 0:
             model.logger.info("Start training!")
 
         model.module.load_mst_oatd()
         for epoch in range(args.epochs):
             model.module.train(epoch)
 
-    if args.task == 'test' and rank == 0:
+    if args.task == 'test' and args.rank == 0:
 
         model.logger.info('Start testing!')
         model.logger.info("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
               + chr(961) + " = {}".format(args.obeserved_ratio))
 
-        checkpoint = torch.load(model.module.path_checkpoint, weights_only=False, map_location=f'cuda:{rank}')
+        checkpoint = torch.load(model.module.path_checkpoint, weights_only=False, map_location=f'cuda:{args.rank}')
         model.module.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         model.module.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
         pr_auc = model.module.detection()
