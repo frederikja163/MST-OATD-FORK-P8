@@ -57,7 +57,7 @@ def main(rank, world_size):
 
 
     model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args)
-    model = nn.DataParallel.DirstributedDataParallel(model, device_ids=[rank])
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[rank], output_device=rank, find_unused_parameters=True)
 
     if args.task == 'train':
         if rank == 0:
