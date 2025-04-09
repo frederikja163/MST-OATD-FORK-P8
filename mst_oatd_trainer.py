@@ -61,8 +61,8 @@ class train_mst_oatd:
         self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args).to(args.device)
         self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args).to(args.device)
 
-        self.MST_OATD_S = DDP(self.MST_OATD_S, device_ids=[args.rank])
-        self.MST_OATD_T = DDP(self.MST_OATD_T, device_ids=[args.rank])
+        # self.MST_OATD_S = DDP(self.MST_OATD_S, device_ids=[rank])
+        # self.MST_OATD_T = DDP(self.MST_OATD_T, device_ids=[rank])
 
         self.device = args.device
         self.dataset = args.dataset
