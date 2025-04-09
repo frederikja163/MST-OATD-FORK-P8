@@ -57,7 +57,8 @@ def savecheckpoint(state, file_name):
 
 class train_mst_oatd(nn.Module):
     def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, args):
-
+        super(train_mst_oatd, self).__init__()
+    
         self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args).to(args.device)
         self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args).to(args.device)
 
