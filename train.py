@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.utils.data import DataLoader, DistributedSampler
-from .sampler import DistributedEvalSampler
 
 from config import args
 from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
@@ -48,10 +47,8 @@ def main(rank, world_size):
     for i in outliers_idx:
         labels[i] = 1
 
-    #train_sampler = DistributedSampler(train_data, num_replicas=world_size, rank=rank, shuffle=True)
-    train_sampler = DistributedEvalSampler(train_data, num_replicas=world_size, rank=rank, shuffle=False)
-    #test_sampler = DistributedSampler(test_data, num_replicas=world_size, rank=rank, shuffle=False)
-    test_sampler = DistributedEvalSampler(test_data, num_replicas=world_size, rank=rank, shuffle=False)
+    train_sampler = DistributedSampler(train_data, num_replicas=world_size, rank=rank, shuffle=True)
+    test_sampler = DistributedSampler(test_data, num_replicas=world_size, rank=rank, shuffle=False)
 
     train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, sampler=train_sampler, collate_fn=collate_fn,
                               num_workers=8, pin_memory=True)
@@ -69,6 +66,7 @@ def main(rank, world_size):
 
 
         for epoch in range(args.pretrain_epochs):
+            train_sampler.set_epoch(epoch)
             model.module.pretrain(epoch)
 
         model.module.train_gmm()
@@ -80,6 +78,7 @@ def main(rank, world_size):
 
         model.module.load_mst_oatd()
         for epoch in range(args.epochs):
+            train_sampler.set_epoch(epoch)
             model.module.train(epoch)
 
     if args.task == 'test' and rank == 0:
