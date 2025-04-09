@@ -20,9 +20,9 @@ def cleanup():
     dist.destroy_process_group()
 
 def main(rank, world_size):
-    print(f"Rank {rank} of {args.world_size} starting on {socket.gethostname()}")
-    print("MASTER_ADDR:", os.environ.get('MASTER_ADDR'))
-    print("MASTER_PORT:", os.environ.get('MASTER_PORT'))
+    print(f"Rank {rank} of {args.world_size} starting on {socket.gethostname()}", flush=True)
+    print("MASTER_ADDR:", os.environ.get('MASTER_ADDR'), flush=True)
+    print("MASTER_PORT:", os.environ.get('MASTER_PORT'), flush=True)
 
     setup(rank, world_size)
 
@@ -57,6 +57,7 @@ def main(rank, world_size):
 
 
     model = train_mst_oatd(s_token_size, t_token_size, labels, train_loader, outliers_loader, args)
+    model = model.to(rank)
     model = nn.DataParallel.DirstributedDataParallel(model, device_ids=[rank])
 
     if args.task == 'train':
@@ -98,6 +99,5 @@ def main(rank, world_size):
 
 
 if __name__ == "__main__":
-    main()
     mp.spawn(main, args=(args.world_size,), nprocs=args.world_size, join=True)
     
