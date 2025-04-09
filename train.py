@@ -61,7 +61,9 @@ def main(rank, world_size):
 
     if args.task == 'train':
         if rank == 0:
-            model.logger.info("Start pretraining!")
+            print("Start pretraining!")
+            # model.logger.info("Start pretraining!")
+
 
         for epoch in range(args.pretrain_epochs):
             model.module.pretrain(epoch)
@@ -70,24 +72,27 @@ def main(rank, world_size):
         model.module.save_weights_for_MSTOATD()
 
         if rank == 0:
-            model.logger.info("Start training!")
+            print("Start training!")
+            # model.logger.info("Start training!")
 
         model.module.load_mst_oatd()
         for epoch in range(args.epochs):
             model.module.train(epoch)
 
     if args.task == 'test' and rank == 0:
-
-        model.logger.info('Start testing!')
-        model.logger.info("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
-              + chr(961) + " = {}".format(args.obeserved_ratio))
+        print("Start testing!")
+        # model.logger.info('Start testing!')
+        print("Distance: {}, fraction: {}, observed_ratio: {}".format(args.distance, args.fraction, args.obeserved_ratio))
+        # model.logger.info("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
+        #       + chr(961) + " = {}".format(args.obeserved_ratio))
 
         checkpoint = torch.load(model.module.path_checkpoint, weights_only=False, map_location=f'cuda:{rank}')
         model.module.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         model.module.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
         pr_auc = model.module.detection()
         pr_auc = "%.4f" % pr_auc
-        model.logger.info("PR_AUC: {}".format(pr_auc))
+        print("PR_AUC: {}".format(pr_auc))
+        # model.logger.info("PR_AUC: {}".format(pr_auc))
 
     if args.task == 'train':
         model.module.train_gmm_update()
