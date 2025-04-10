@@ -1,7 +1,7 @@
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size", type=int, default=1600)
+parser.add_argument("--batch_size", type=int, default=800) #Default: 1600
 
 parser.add_argument('--embedding_size', type=int, default=128)
 parser.add_argument('--hidden_size', type=int, default=512)
