@@ -53,8 +53,7 @@ def time_convert(times, time_interval):
 
 
 def savecheckpoint(state, file_name):
-    # torch.save(state, file_name)
-    return 0
+    torch.save(state, file_name)
 
 
 class train_mst_oatd:
@@ -152,12 +151,8 @@ class train_mst_oatd:
         epo_loss = "%.4f" % (epo_loss / len(self.train_loader))
         self.logger.info("Epoch {} pretrain loss: {}".format(epoch + 1, epo_loss))
         
-        if torch.cuda.device_count() > 1:
-            checkpoint = {"model_state_dict_s": self.MST_OATD_S.module.state_dict(),
-                        "model_state_dict_t": self.MST_OATD_T.module.state_dict()}
-        else:
-            checkpoint = {"model_state_dict_s": self.MST_OATD_S.module.state_dict(),
-                        "model_state_dict_t": self.MST_OATD_T.module.state_dict()}
+        checkpoint = {"model_state_dict_s": self.MST_OATD_S.module.state_dict(),
+                      "model_state_dict_t": self.MST_OATD_T.module.state_dict()}
         torch.save(checkpoint, self.pretrained_path)
 
     def get_hidden(self):
@@ -296,7 +291,7 @@ class train_mst_oatd:
             self.logger.info('Epoch {} loss: {}'.format(epoch + 1, total_loss))
             checkpoint = {"model_state_dict_s": self.MST_OATD_S.module.state_dict(),
                           "model_state_dict_t": self.MST_OATD_T.module.state_dict()}
-            # torch.save(checkpoint, self.path_checkpoint)
+            torch.save(checkpoint, self.path_checkpoint)
 
     def detection(self):
 
