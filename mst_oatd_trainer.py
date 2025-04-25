@@ -183,12 +183,8 @@ class train_mst_oatd:
         torch.cuda.empty_cache()
         checkpoint = torch.load(self.pretrained_path, weights_only=False)
 
-        if torch.cuda.device_count() > 1:
-            self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-            self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
-        else:
-            self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-            self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
+        self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
+        self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
 
 
         with torch.no_grad():
@@ -381,12 +377,8 @@ class train_mst_oatd:
         torch.cuda.empty_cache()
         checkpoint = torch.load(self.pretrained_path, weights_only=False)
 
-        if torch.cuda.device_count() > 1:
-            self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-            self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
-        else:
-            self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-            self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
+        self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
+        self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
 
         dist.barrier()
         gmm_params = torch.load(self.gmm_path, weights_only=False)
