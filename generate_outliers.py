@@ -95,52 +95,30 @@ def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=a
 if __name__ == '__main__':
     np.random.seed(1234)
     print("=========================")
-    print("Dataset: " + args.dataset)
-    print("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
-          + chr(961) + " = {}".format(args.obeserved_ratio))
+    print(f"Dataset: {args.dataset}")
+    print(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
     if args.dataset == 'porto':
         map_size = (51, 119)
     elif args.dataset == 'cd':
         map_size = (167, 154)
 
-    data = np.load("./data/{}/test_data_init.npy".format(args.dataset), allow_pickle=True)
+    data = np.load(f"./data/{args.dataset}/test_init.npy", allow_pickle=True)
     outliers_trajs, outliers_idx = generate_outliers(data)
     outliers_trajs = np.array(outliers_trajs, dtype=object)
     outliers_idx = np.array(outliers_idx)
 
-    np.save("./data/{}/outliers_data_init_{}_{}_{}.npy".format(args.dataset, args.distance, args.fraction,
-                                                               args.obeserved_ratio), outliers_trajs)
-    np.save("./data/{}/outliers_idx_init_{}_{}_{}.npy".format(args.dataset, args.distance, args.fraction,
-                                                              args.obeserved_ratio), outliers_idx)
-
-    if args.dataset == 'cd':
-
-        traj_path = "../datasets/chengdu"
-        path_list = os.listdir(traj_path)
-        path_list.sort(key=lambda x: x.split('.'))
-
-        for file in path_list[3: 10]:
-            if file[-4:] == '.txt':
-                data = np.load("./data/{}/test_data_{}.npy".format(args.dataset, file[:8]),
-                               allow_pickle=True)
-                outliers_trajs, outliers_idx = generate_outliers(data)
-                outliers_trajs = np.array(outliers_trajs, dtype=object)
-                outliers_idx = np.array(outliers_idx)
-
-                np.save("./data/{}/outliers_data_{}_{}_{}_{}.npy".format(args.dataset, file[:8], args.distance,
-                                                                args.fraction, args.obeserved_ratio), outliers_trajs)
-                np.save("./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, file[:8], args.distance,
-                                                                    args.fraction, args.obeserved_ratio), outliers_idx)
+    np.save(f"./data/{args.dataset}/outliers_data_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
+    np.save(f"./data/{args.dataset}/outliers_idx_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
 
     if args.dataset == 'porto':
         for i in range(1, 11):
-            data = np.load("./data/{}/test_data_{}.npy".format(args.dataset, i), allow_pickle=True)
+            data = np.load(f"./data/{args.dataset}/test_data_{i}.npy", allow_pickle=True)
             outliers_trajs, outliers_idx = generate_outliers(data)
             outliers_trajs = np.array(outliers_trajs, dtype=object)
             outliers_idx = np.array(outliers_idx)
 
-            np.save("./data/{}/outliers_data_{}_{}_{}_{}.npy".format(args.dataset, i, args.distance,
-                                                                args.fraction, args.obeserved_ratio), outliers_trajs)
-            np.save("./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, i, args.distance,
-                                                                    args.fraction, args.obeserved_ratio), outliers_idx)
+            np.save(
+                f"./data/{args.dataset}/outliers_data_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
+            np.save(
+                f"./data/{args.dataset}/outliers_idx_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
