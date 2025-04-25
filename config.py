@@ -21,7 +21,7 @@ parser.add_argument("--distance", type=int, default=2) # Default 2
 parser.add_argument("--fraction", type=float, default=0.2) # Default 0.2
 parser.add_argument("--obeserved_ratio", type=float, default=1.0) # Default 1.0
 
-parser.add_argument("--device", type=str, default='cuda:0') # Default cuda:0
+parser.add_argument("--device", type=str, default='cuda') # Default cuda:0
 parser.add_argument("--dataset", type=str, default='porto') # Default porto
 parser.add_argument("--update_mode", type=str, default='pretrain') # Default pretrain
 
