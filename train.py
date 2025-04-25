@@ -91,8 +91,8 @@ def main_worker(rank, world_size):
         if args.task == 'test':
             MST_OATD.logger.info('Start testing!')
             checkpoint = torch.load(MST_OATD.path_checkpoint, map_location=device)
-            MST_OATD.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
-            MST_OATD.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
+            MST_OATD.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
+            MST_OATD.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
 
             pr_auc = MST_OATD.detection()
             pr_auc = "%.4f" % pr_auc

@@ -113,6 +113,8 @@ class train_mst_oatd:
         self.s2_size = args.s2_size
 
     def pretrain(self, epoch):
+        self.train_sampler.set_epoch(epoch) 
+        
         self.MST_OATD_S.module.train()
         self.MST_OATD_T.module.train()
         epo_loss = 0
@@ -251,6 +253,8 @@ class train_mst_oatd:
                         "gmm_update_precisions_cholesky": self.gmm.precisions_cholesky_}, self.gmm_update_path)
 
     def train(self, epoch):
+        self.train_sampler.set_epoch(epoch) 
+        
         self.MST_OATD_S.module.train()
         self.MST_OATD_T.module.train()
         total_loss = 0
