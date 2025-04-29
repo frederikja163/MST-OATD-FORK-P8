@@ -145,9 +145,9 @@ def merge(files, outfile):
 def split_and_merge_files(files):
     train_files, test_files = train_test_split(files, test_size=0.2, random_state=42)
     print('Merging train trajectories')
-    merge(test_files, "train_init")
+    merge(train_files, "train_init")
     print('Merging test trajectories')
-    merge(train_files, "test_init")
+    merge(test_files, "test_init")
 
     print('Finished!')
 

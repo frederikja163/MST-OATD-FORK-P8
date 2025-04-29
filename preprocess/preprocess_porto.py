@@ -96,7 +96,7 @@ def main():
 
         preprocessed_trajectories, traj_numm, point_numm = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary)
         traj_num += traj_numm
-        point_numm += point_numm
+        point_num += point_numm
         train_data, test_data = train_test_split(preprocessed_trajectories, test_size=0.2, random_state=42)
 
         np.save(f"../data/{args.dataset}/train_data_{month}.npy", np.array(train_data, dtype=object))
