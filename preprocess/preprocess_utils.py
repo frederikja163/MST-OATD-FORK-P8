@@ -161,7 +161,8 @@ def split_files_for_evolving(trajectories, outfile):
         foldername = "test"
     merged_init_trajectories = np.concatenate(init, axis=0)
     np.save(f"../data/{args.dataset}/{outfile}", merged_init_trajectories)
-    all_evolving = np.split(evolving, args.epochs)
+    ##TODO: ensure this still works when evolving cant be evenly split by epochs 
+    all_evolving = np.split(evolving, args.epochs if args.epochs>0 else 1)
     i=0
     for array in all_evolving:
         merged_evolving_trajectories= np.concatenate(array, axis=0)
