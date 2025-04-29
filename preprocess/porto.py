@@ -2,7 +2,7 @@ import datetime
 import json
 import random
 
-from preprocess_utils import *
+from utils import *
 from config import args
 
 def preprocess(trajectories, shortest, longest, grid_size, boundary):
