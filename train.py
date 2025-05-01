@@ -7,11 +7,11 @@ from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
 
 
 def main():
-    train_trajs = np.load('./data/{}/train_data_init.npy'.format(args.dataset), allow_pickle=True)
-    test_trajs = np.load('./data/{}/outliers_data_init_{}_{}_{}.npy'.format(args.dataset, args.distance, args.fraction,
-                                                                            args.obeserved_ratio), allow_pickle=True)
-    outliers_idx = np.load("./data/{}/outliers_idx_init_{}_{}_{}.npy".format(args.dataset, args.distance, args.fraction,
-                                                                             args.obeserved_ratio), allow_pickle=True)
+    train_trajs = np.load(f'./data/{args.dataset}/train_init.npy', allow_pickle=True)
+    test_trajs = np.load(
+        f'./data/{args.dataset}/outliers_data_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy', allow_pickle=True)
+    outliers_idx = np.load(
+        f"./data/{args.dataset}/outliers_idx_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", allow_pickle=True)
 
     train_data = MyDataset(train_trajs)
     test_data = MyDataset(test_trajs)
@@ -46,8 +46,7 @@ def main():
     if args.task == 'test':
 
         MST_OATD.logger.info('Start testing!')
-        MST_OATD.logger.info("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
-              + chr(961) + " = {}".format(args.obeserved_ratio))
+        MST_OATD.logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
         checkpoint = torch.load(MST_OATD.path_checkpoint, weights_only=False)
         MST_OATD.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
@@ -69,7 +68,7 @@ if __name__ == "__main__":
         t_token_size = 5760
 
     elif args.dataset == 'cd':
-        s_token_size = 167 * 154
+        s_token_size = 1638 #167 * 154
         t_token_size = 8640
 
     main()
