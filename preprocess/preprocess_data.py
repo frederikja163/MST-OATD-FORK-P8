@@ -1,10 +1,10 @@
 import numpy as np
 
-from preprocess.config import args
-from preprocess.tdrive import main as tdrive
-from preprocess.porto import main as porto
-from preprocess.cd import main as cd
-from preprocess.utils import main as util
+from tdrive import main as tdrive
+from porto import main as porto
+from cd import main as cd
+from utils import main as util
+from config import args
 
 if __name__ == '__main__':
     np.random.seed(1234)
