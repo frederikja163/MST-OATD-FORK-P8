@@ -9,14 +9,11 @@ import torch.optim as optim
 from sklearn.mixture import GaussianMixture
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Dataset
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
-from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score, average_precision_score
 
 from logging_set import get_logger
 from mst_oatd import MST_OATD
-from utils import make_mask, make_len_mask
-
+from utils import auc_score, make_mask, make_len_mask
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score, average_precision_score
 
 def collate_fn(batch):
     max_len = max(len(x) for x in batch)
@@ -57,16 +54,12 @@ def savecheckpoint(state, file_name):
 
 
 class train_mst_oatd:
-    def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, args, rank=0):
+    def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, args):
 
-        self.rank = rank
+        self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args).to(args.device)
+        self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args).to(args.device)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        # Enable Multi-GPU if available
-        self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args)
-        self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args)
-
+        self.device = args.device
         self.dataset = args.dataset
         self.n_cluster = args.n_cluster
         self.hidden_size = args.hidden_size
@@ -113,20 +106,11 @@ class train_mst_oatd:
         self.s2_size = args.s2_size
 
     def pretrain(self, epoch):
-        self.train_sampler.set_epoch(epoch) 
-        
-        self.MST_OATD_S.module.train()
-        self.MST_OATD_T.module.train()
+        self.MST_OATD_S.train()
+        self.MST_OATD_T.train()
         epo_loss = 0
 
-        i = 0
         for batch in self.train_loader:
-
-            if i % 10 == 0: 
-                self.logger.info(f"Current Batch: {i}")
-
-            i += 1
-
             trajs, times, seq_lengths = batch
             batch_size = len(trajs)
 
@@ -134,8 +118,8 @@ class train_mst_oatd:
 
             self.pretrain_optimizer_s.zero_grad()
             self.pretrain_optimizer_t.zero_grad()
-            output_s, _, _, _ = self.MST_OATD_S.module(trajs, times, seq_lengths, batch_size, "pretrain", -1)
-            output_t, _, _, _ = self.MST_OATD_T.module(trajs, times, seq_lengths, batch_size, "pretrain", -1)
+            output_s, _, _, _ = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
+            output_t, _, _, _ = self.MST_OATD_T(trajs, times, seq_lengths, batch_size, "pretrain", -1)
 
             times = time_convert(times, self.time_interval)
 
@@ -152,42 +136,30 @@ class train_mst_oatd:
         self.lr_pretrain_t.step()
         epo_loss = "%.4f" % (epo_loss / len(self.train_loader))
         self.logger.info("Epoch {} pretrain loss: {}".format(epoch + 1, epo_loss))
-        
-        checkpoint = {"model_state_dict_s": self.MST_OATD_S.module.state_dict(),
-                      "model_state_dict_t": self.MST_OATD_T.module.state_dict()}
+        checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
+                      "model_state_dict_t": self.MST_OATD_T.state_dict()}
         torch.save(checkpoint, self.pretrained_path)
 
     def get_hidden(self):
-        dist.barrier()
         checkpoint = torch.load(self.path_checkpoint, weights_only=False)
-        self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-        self.MST_OATD_S.module.eval()
+        self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
+        self.MST_OATD_S.eval()
         with torch.no_grad():
             z = []
-            i = 0
             for batch in self.train_loader:
-
-                if i % 10 == 0: self.logger.info(f"Current Batch: {i}")
-                i += 1
-
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
-                _, _, _, hidden = self.MST_OATD_S.module(trajs, times, seq_lengths, batch_size, "pretrain", -1)
+                _, _, _, hidden = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
                 z.append(hidden.squeeze(0))
             z = torch.cat(z, dim=0)
         return z
 
     def train_gmm(self):
-        self.MST_OATD_S.module.eval()
-        self.MST_OATD_T.module.eval()
-        
-        dist.barrier()
-        torch.cuda.empty_cache()
+        self.MST_OATD_S.eval()
+        self.MST_OATD_T.eval()
         checkpoint = torch.load(self.pretrained_path, weights_only=False)
-
-        self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-        self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
-
+        self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
+        self.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
 
         with torch.no_grad():
             z_s = []
@@ -195,8 +167,8 @@ class train_mst_oatd:
             for batch in self.train_loader:
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
-                _, _, _, hidden_s = self.MST_OATD_S.module(trajs, times, seq_lengths, batch_size, "pretrain", -1)
-                _, _, _, hidden_t = self.MST_OATD_T.module(trajs, times, seq_lengths, batch_size, "pretrain", -1)
+                _, _, _, hidden_s = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
+                _, _, _, hidden_t = self.MST_OATD_T(trajs, times, seq_lengths, batch_size, "pretrain", -1)
 
                 z_s.append(hidden_s.squeeze(0))
                 z_t.append(hidden_t.squeeze(0))
@@ -207,11 +179,9 @@ class train_mst_oatd:
 
         self.gmm_s = GaussianMixture(n_components=self.n_cluster, covariance_type="diag", n_init=1)
         self.gmm_s.fit(z_s.cpu().numpy())
-        self.logger.info(f"Finished Fitting Spatial data!")
 
         self.gmm_t = GaussianMixture(n_components=self.n_cluster, covariance_type="diag", n_init=1)
         self.gmm_t.fit(z_t.cpu().numpy())
-        self.logger.info(f"Finished Fitting Temporal data!")
 
     def save_weights_for_MSTOATD(self):
         savecheckpoint({"gmm_s_mu_prior": self.gmm_s.means_,
@@ -223,22 +193,16 @@ class train_mst_oatd:
 
     def train_gmm_update(self):
 
-        dist.barrier()
         checkpoint = torch.load(self.path_checkpoint, weights_only=False)
-        self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-        self.MST_OATD_S.module.eval()
+        self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
+        self.MST_OATD_S.eval()
 
         with torch.no_grad():
             z = []
-            i = 0
             for batch in self.train_loader:
-
-                if i % 10 == 0: self.logger.info(f"Current Batch: {i}")
-                i += 1
-
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
-                _, _, _, hidden = self.MST_OATD_S.module(trajs, times, seq_lengths, batch_size, "pretrain", -1)
+                _, _, _, hidden = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
                 z.append(hidden.squeeze(0))
             z = torch.cat(z, dim=0)
 
@@ -253,18 +217,10 @@ class train_mst_oatd:
                         "gmm_update_precisions_cholesky": self.gmm.precisions_cholesky_}, self.gmm_update_path)
 
     def train(self, epoch):
-        self.train_sampler.set_epoch(epoch) 
-        
-        self.MST_OATD_S.module.train()
-        self.MST_OATD_T.module.train()
+        self.MST_OATD_S.train()
+        self.MST_OATD_T.train()
         total_loss = 0
-
-        i = 0
         for batch in self.train_loader:
-
-            if i % 10 == 0: self.logger.info(f"Current Batch: {i}")
-            i += 1
-
             trajs, times, seq_lengths = batch
             batch_size = len(trajs)
 
@@ -273,10 +229,10 @@ class train_mst_oatd:
             self.optimizer_s.zero_grad()
             self.optimizer_t.zero_grad()
 
-            x_hat_s, mu_s, log_var_s, z_s = self.MST_OATD_S.module(trajs, times, seq_lengths, batch_size, "train", -1)
+            x_hat_s, mu_s, log_var_s, z_s = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "train", -1)
             loss = self.Loss(x_hat_s, trajs.to(self.device), mu_s.squeeze(0), log_var_s.squeeze(0),
                              z_s.squeeze(0), 's', mask)
-            x_hat_t, mu_t, log_var_t, z_t = self.MST_OATD_T.module(trajs, times, seq_lengths, batch_size, "train", -1)
+            x_hat_t, mu_t, log_var_t, z_t = self.MST_OATD_T(trajs, times, seq_lengths, batch_size, "train", -1)
             times = time_convert(times, self.time_interval)
             loss += self.Loss(x_hat_t, times.to(self.device), mu_t.squeeze(0), log_var_t.squeeze(0),
                               z_t.squeeze(0), 't', mask)
@@ -289,25 +245,20 @@ class train_mst_oatd:
         if self.mode == "train":
             total_loss = "%.4f" % (total_loss / len(self.train_loader))
             self.logger.info('Epoch {} loss: {}'.format(epoch + 1, total_loss))
-            checkpoint = {"model_state_dict_s": self.MST_OATD_S.module.state_dict(),
-                          "model_state_dict_t": self.MST_OATD_T.module.state_dict()}
+            checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
+                          "model_state_dict_t": self.MST_OATD_T.state_dict()}
             torch.save(checkpoint, self.path_checkpoint)
 
     def detection(self):
 
-        self.MST_OATD_S.module.eval()
+        self.MST_OATD_S.eval()
         all_likelihood_s = []
-        self.MST_OATD_T.module.eval()
+        self.MST_OATD_T.eval()
         all_likelihood_t = []
 
         with torch.no_grad():
 
-            i = 0
             for batch in self.outliers_loader:
-
-                if i % 10 == 0: self.logger.info(f"Current Batch: {i}")
-                i += 1
-
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
                 mask = make_mask(make_len_mask(trajs)).to(self.device)
@@ -317,13 +268,13 @@ class train_mst_oatd:
                 c_likelihood_t = []
 
                 for c in range(self.n_cluster):
-                    output_s, _, _, _ = self.MST_OATD_S.module(trajs, times, seq_lengths, batch_size, "test", c)
+                    output_s, _, _, _ = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "test", c)
                     likelihood_s = - self.detec(output_s.reshape(-1, output_s.shape[-1]),
                                                 trajs.to(self.device).reshape(-1))
                     likelihood_s = torch.exp(
                         torch.sum(mask * (likelihood_s.reshape(batch_size, -1)), dim=-1) / torch.sum(mask, 1))
 
-                    output_t, _, _, _ = self.MST_OATD_T.module(trajs, times, seq_lengths, batch_size, "test", c)
+                    output_t, _, _, _ = self.MST_OATD_T(trajs, times, seq_lengths, batch_size, "test", c)
                     likelihood_t = - self.detec(output_t.reshape(-1, output_t.shape[-1]),
                                                 times_token.to(self.device).reshape(-1))
                     likelihood_t = torch.exp(
@@ -382,13 +333,13 @@ class train_mst_oatd:
 
     def Loss(self, x_hat, targets, z_mu, z_sigma2_log, z, mode, mask):
         if mode == 's':
-            pi = self.MST_OATD_S.module.pi_prior
-            log_sigma2_c = self.MST_OATD_S.module.log_var_prior
-            mu_c = self.MST_OATD_S.module.mu_prior
+            pi = self.MST_OATD_S.pi_prior
+            log_sigma2_c = self.MST_OATD_S.log_var_prior
+            mu_c = self.MST_OATD_S.mu_prior
         elif mode == 't':
-            pi = self.MST_OATD_T.module.pi_prior
-            log_sigma2_c = self.MST_OATD_T.module.log_var_prior
-            mu_c = self.MST_OATD_T.module.mu_prior
+            pi = self.MST_OATD_T.pi_prior
+            log_sigma2_c = self.MST_OATD_T.log_var_prior
+            mu_c = self.MST_OATD_T.mu_prior
 
         reconstruction_loss = self.crit(x_hat[mask == 1], targets[mask == 1])
 
@@ -407,27 +358,22 @@ class train_mst_oatd:
         return loss
 
     def load_mst_oatd(self):
-        dist.barrier()
-        torch.cuda.empty_cache()
         checkpoint = torch.load(self.pretrained_path, weights_only=False)
+        self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
+        self.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
 
-        self.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
-        self.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
-
-        dist.barrier()
         gmm_params = torch.load(self.gmm_path, weights_only=False)
 
-        self.MST_OATD_S.module.pi_prior.data = torch.from_numpy(gmm_params['gmm_s_pi_prior']).to(self.device)
-        self.MST_OATD_S.module.mu_prior.data = torch.from_numpy(gmm_params['gmm_s_mu_prior']).to(self.device)
-        self.MST_OATD_S.module.log_var_prior.data = torch.from_numpy(gmm_params['gmm_s_logvar_prior']).to(self.device)
+        self.MST_OATD_S.pi_prior.data = torch.from_numpy(gmm_params['gmm_s_pi_prior']).to(self.device)
+        self.MST_OATD_S.mu_prior.data = torch.from_numpy(gmm_params['gmm_s_mu_prior']).to(self.device)
+        self.MST_OATD_S.log_var_prior.data = torch.from_numpy(gmm_params['gmm_s_logvar_prior']).to(self.device)
 
-        self.MST_OATD_T.module.pi_prior.data = torch.from_numpy(gmm_params['gmm_t_pi_prior']).to(self.device)
-        self.MST_OATD_T.module.mu_prior.data = torch.from_numpy(gmm_params['gmm_t_mu_prior']).to(self.device)
-        self.MST_OATD_T.module.log_var_prior.data = torch.from_numpy(gmm_params['gmms_t_logvar_prior']).to(self.device)
+        self.MST_OATD_T.pi_prior.data = torch.from_numpy(gmm_params['gmm_t_pi_prior']).to(self.device)
+        self.MST_OATD_T.mu_prior.data = torch.from_numpy(gmm_params['gmm_t_mu_prior']).to(self.device)
+        self.MST_OATD_T.log_var_prior.data = torch.from_numpy(gmm_params['gmms_t_logvar_prior']).to(self.device)
 
     def get_prob(self, z):
         gmm = GaussianMixture(n_components=self.n_cluster, covariance_type='diag')
-        dist.barrier()
         gmm_params = torch.load(self.gmm_update_path, weights_only=False)
         gmm.precisions_cholesky_ = gmm_params['gmm_update_precisions_cholesky']
         gmm.weights_ = gmm_params['gmm_update_weights']
