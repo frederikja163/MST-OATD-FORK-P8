@@ -8,6 +8,7 @@ from config import args
 from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
 import os
 import time
+from datetime import datetime
 
 # Set environment variables for distributed training
 os.environ['MASTER_ADDR'] = '127.0.0.1'  # IP address of the master node
@@ -89,14 +90,49 @@ def main_worker(rank, world_size):
             MST_OATD.logger.info("--- %s seconds for train ---" % round(time.time() - start_time, 2))
 
         if args.task == 'test':
+
             MST_OATD.logger.info('Start testing!')
+
             checkpoint = torch.load(MST_OATD.path_checkpoint, map_location=device)
+
             MST_OATD.MST_OATD_S.module.load_state_dict(checkpoint['model_state_dict_s'])
             MST_OATD.MST_OATD_T.module.load_state_dict(checkpoint['model_state_dict_t'])
 
-            pr_auc = MST_OATD.detection()
-            pr_auc = "%.4f" % pr_auc
-            MST_OATD.logger.info(f"PR_AUC: {pr_auc}")
+            metrics = MST_OATD.detection()
+
+            # Format metrics to display
+            formatted_metrics = "\n".join([f"{k.upper()}: {metrics[k]:.4f}" for k in metrics])
+
+            # Log to console
+            MST_OATD.logger.info("Evaluation Metrics:")
+            for k, v in metrics.items():
+                MST_OATD.logger.info(f"{k.upper()}: {v:.4f}")
+
+            # Build the output string with timestamp, args, and metrics
+            output_string = f"Timestamp: {datetime.now()}\n"
+
+            # Add all arguments dynamically
+            for arg, value in vars(args).items():
+                output_string += f"{arg}: {value}\n"
+
+            # Add the formatted metrics to the output string
+            output_string += f"\n{formatted_metrics}\n"
+            output_string += "---------------------------------------------\n"
+
+            output_path = os.path.join(os.getcwd(), 'results.txt')
+
+            # Check if the file exists; if not, create it
+            if not os.path.exists(output_path):
+                with open(output_path, 'w') as f:
+                    f.write("Results Log\n")
+                    f.write("===========\n")
+                    f.write("Timestamp, Batch Size, Embedding Size, Hidden Size, N Cluster, Pretrain LR S, Pretrain LR T, "
+                            "LR S, LR T, Epochs, Pretrain Epochs, Ratio, Distance, Fraction, Observed Ratio, Device, "
+                            "Dataset, Update Mode, Train Num, S1 Size, S2 Size, Task, AUC, Precision, Recall, F1, Accuracy\n")
+                    f.write("====================================================================================================\n")
+
+            with open(output_path, 'a') as f:
+                f.write(output_string)
 
         if args.task == 'train':
             MST_OATD.train_gmm_update()

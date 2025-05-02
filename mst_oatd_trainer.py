@@ -11,11 +11,11 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Dataset
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score, average_precision_score
 
 from logging_set import get_logger
 from mst_oatd import MST_OATD
-from utils import auc_score, make_mask, make_len_mask
+from utils import make_mask, make_len_mask
 
 
 def collate_fn(batch):
@@ -335,11 +335,41 @@ class train_mst_oatd:
                 all_likelihood_s.append(torch.cat(c_likelihood_s).max(0)[0])
                 all_likelihood_t.append(torch.cat(c_likelihood_t).max(0)[0])
 
+        # Final likelihoods
         likelihood_s = torch.cat(all_likelihood_s, dim=0)
         likelihood_t = torch.cat(all_likelihood_t, dim=0)
+        anomaly_score = (1 - likelihood_s * likelihood_t).cpu().detach().numpy()
 
-        pr_auc = auc_score(self.labels, (1 - likelihood_s * likelihood_t).cpu().detach().numpy())
-        return pr_auc
+        # True labels
+        y_true = self.labels
+
+        # Metrics
+        pr_auc = average_precision_score(y_true, anomaly_score)
+        roc_auc = roc_auc_score(y_true, anomaly_score)
+
+        # Optimal threshold via F1
+        best_f1, best_thresh = 0, 0
+        for thresh in np.linspace(0, 1, 100):
+            preds = (anomaly_score >= thresh).astype(int)
+            f1 = f1_score(y_true, preds)
+            if f1 > best_f1:
+                best_f1, best_thresh = f1, thresh
+
+        # Compute other metrics at best threshold
+        preds_opt = (anomaly_score >= best_thresh).astype(int)
+        precision = precision_score(y_true, preds_opt)
+        recall = recall_score(y_true, preds_opt)
+        accuracy = accuracy_score(y_true, preds_opt)
+
+        return {
+            "pr_auc": pr_auc,
+            "roc_auc": roc_auc,
+            "f1": best_f1,
+            "precision": precision,
+            "recall": recall,
+            "accuracy": accuracy,
+            "threshold": best_thresh
+        }
 
     def gaussian_pdf_log(self, x, mu, log_var):
         return -0.5 * (torch.sum(np.log(np.pi * 2) + log_var + (x - mu).pow(2) / torch.exp(log_var), 1))
