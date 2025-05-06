@@ -74,7 +74,7 @@ def main():
         output_string += f"\n{formatted_metrics}\n"
         output_string += "---------------------------------------------\n"
 
-        output_path = os.path.join(os.getcwd(), 'results.txt')
+        output_path = os.path.join(os.getcwd(), f"results_{args.dataset}_{datetime.today().strftime('%Y-%m-%d')}.txt")
 
         # Check if the file exists; if not, create it
         if not os.path.exists(output_path):

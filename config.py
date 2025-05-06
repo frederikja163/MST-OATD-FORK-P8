@@ -27,7 +27,7 @@ parser.add_argument("--update_mode", type=str, default='pretrain') # Default pre
 
 parser.add_argument("--train_num", type=int, default=80000)  # Default 80000
 
-parser.add_argument("--s1_size", type=int, default=2) # Default 2
+parser.add_argument("--s1_size", type=int, default=2) # Default 2 
 parser.add_argument("--s2_size", type=int, default=4) # Default 4
 
 parser.add_argument("--task", type=str, default='train') # Default train
