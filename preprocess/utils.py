@@ -71,7 +71,6 @@ def preprocess(file, shortest, longest, boundary, convert_date,
     # Unpack
     (lat_size, lon_size, lon_grid_num) = grid_size
 
-    # Read and sort trajectories based on id and timestamp
     try:
         data = pd.read_csv(f"../datasets/{args.dataset}/{file}", header=None, iterator=True, names=columns, chunksize=args.chunk_size)
     except EmptyDataError:
