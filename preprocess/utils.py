@@ -159,18 +159,22 @@ def split_files_for_evolving(datafile):
     filename = os.path.splitext(datafile)[0]
     trajectories.append(np.load(f"../data/{args.dataset}/data_{filename}.npy", allow_pickle=True))
     #split into init vs evolving 
-    #split init and evolving further
-    #save as files
-
     init, evolving = np.split(trajectories, int(len(trajectories)*args.epoch_split))
-    merged_init_trajectories = np.concatenate(init, axis=0)
-    np.save(f"../data/{args.dataset}/{outfile}", merged_init_trajectories)
-    all_evolving = np.split(evolving, args.epochs if args.epochs>0 else 1)
-    i=0
-    for array in all_evolving:
-        merged_evolving_trajectories= np.concatenate(array, axis=0)
-        np.save(f"../data/{args.dataset}/{foldername}/{i}", merged_evolving_trajectories)
-        i+=1
+
+    #split init and evolving further
+    train_init, test_init = np.split(init, int(len(init)*0.8))
+    train_evolving, test_evolving = np.split(evolving, int(len(evolving)*0.8))    
+    all_train_evolving = np.split(train_evolving, args.epochs if args.epochs>0 else 1)
+    all_test_evolving =  np.split(test_evolving, args.epochs if args.epochs>0 else 1)
+    #save as files
+    # TODO: IMPORTANT make sure im not concatenating the arrays too much, additionally make sure using args.epochs-1 is right intuition 
+    for i in range (0, args.epochs-1):
+        merged_evolving_train_trajectories= np.concatenate(all_train_evolving[i], axis=0)
+        merged_evolving_test_trajectories= np.concatenate(all_train_evolving[i], axis=0)
+        np.save(f"../data/{args.dataset}/train/{i}", merged_evolving_train_trajectories)
+        np.save(f"../data/{args.dataset}/test/{i}", merged_evolving_test_trajectories)
+    np.save(f"../data/{args.dataset}/train_init", train_init)
+    np.save(f"../data/{args.dataset}/test_init", test_init)
 
 
 def main():
