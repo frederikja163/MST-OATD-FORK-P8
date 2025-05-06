@@ -136,8 +136,8 @@ def merge(files, outfile):
             trajectories.append(file_trajectories)
         except FileNotFoundError: # empty files are skipped
             continue
-
-    split_files_for_evolving(trajectories, outfile)
+    
+    np.save(f"../data/{args.dataset}/{outfile}", trajectories)
 
 # merges 80% of the files into train_init.npy and 20% into test_init.npy
 def split_and_merge_files(files):
@@ -149,18 +149,22 @@ def split_and_merge_files(files):
 
     print('Finished!')
 
-def split_files_for_evolving(trajectories, outfile):
+def split_files_for_evolving(datafile):
     # this version works specifically for Chengdu since it conveniently gives an array of the trajectories
     # TODO: once CD version confirmed to work, change to make more generic, perhaps load the trajectories from the files here to avoid relying on merge()
-    # NOTE: find way to reduce CD data size so i can run the preprocessing without running out of memory on my computer, might need to open data files on home pc and delete points to make them smaller.
+    # TODO: follow aavild's advice and change function to take in the numpy file made in the other preprocessing methods
+    trajectories = np.array()
+
+    #load entire npy file which is passed
+    filename = os.path.splitext(datafile)[0]
+    trajectories.append(np.load(f"../data/{args.dataset}/data_{filename}.npy", allow_pickle=True))
+    #split into init vs evolving 
+    #split init and evolving further
+    #save as files
+
     init, evolving = np.split(trajectories, int(len(trajectories)*args.epoch_split))
-    if outfile == "train_init":
-        foldername = "train"
-    else:
-        foldername = "test"
     merged_init_trajectories = np.concatenate(init, axis=0)
     np.save(f"../data/{args.dataset}/{outfile}", merged_init_trajectories)
-    ##TODO: ensure this still works when evolving cant be evenly split by epochs 
     all_evolving = np.split(evolving, args.epochs if args.epochs>0 else 1)
     i=0
     for array in all_evolving:
