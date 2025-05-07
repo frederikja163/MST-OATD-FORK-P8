@@ -42,3 +42,6 @@ def main():
     print("Total point num:", sum(point_nums))
 
     split_and_merge_files(files)
+
+    #TODO: for testing, need to call with path to combined .npy file dynamically
+    split_files_for_evolving(f"../data/{args.dataset}/data_train_init.npy")

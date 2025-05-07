@@ -156,13 +156,14 @@ def split_files_for_evolving(datafile):
     trajectories = np.array()
 
     #load entire npy file which is passed
-    filename = os.path.splitext(datafile)[0]
-    trajectories.append(np.load(f"../data/{args.dataset}/data_{filename}.npy", allow_pickle=True))
+    trajectories.append(np.load(datafile, allow_pickle=True))
     #split into init vs evolving 
     init, evolving = np.split(trajectories, [int(args.epoch_split*len(trajectories))])
+    print(f"init size: {init.size} evolving size: {evolving.size}\n")
     #TODO: test if the np.split based on percentage actually works
     #split init and evolving further
     train_init, test_init = np.split(init, [int(0.8*len(init))])
+    print(f"train_init size: {train_init.size} evolving_init size: {train_init.size}\n")
     train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])    
     all_train_evolving = np.split(train_evolving, args.epochs if args.epochs>0 else 1)
     all_test_evolving =  np.split(test_evolving, args.epochs if args.epochs>0 else 1)
