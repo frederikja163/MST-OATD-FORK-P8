@@ -151,8 +151,6 @@ def split_and_merge_files(files):
 
 def split_files_for_evolving(datafile):
     # this version works specifically for Chengdu since it conveniently gives an array of the trajectories
-    # TODO: once CD version confirmed to work, change to make more generic, perhaps load the trajectories from the files here to avoid relying on merge()
-    # TODO: follow aavild's advice and change function to take in the numpy file made in the other preprocessing methods
     trajectories = np.array()
 
     #load entire npy file which is passed
@@ -168,10 +166,9 @@ def split_files_for_evolving(datafile):
     all_train_evolving = np.split(train_evolving, args.epochs if args.epochs>0 else 1)
     all_test_evolving =  np.split(test_evolving, args.epochs if args.epochs>0 else 1)
     #save as files
-    # TODO: IMPORTANT make sure im not concatenating the arrays too much, additionally make sure using args.epochs-1 is right intuition 
     for i in range (0, args.epochs-1):
-        merged_evolving_train_trajectories= np.concatenate(all_train_evolving[i], axis=0)
-        merged_evolving_test_trajectories= np.concatenate(all_train_evolving[i], axis=0)
+        merged_evolving_train_trajectories=all_train_evolving[i], axis=0
+        merged_evolving_test_trajectories= all_train_evolving[i], axis=0
         np.save(f"../data/{args.dataset}/train/{i}", merged_evolving_train_trajectories)
         np.save(f"../data/{args.dataset}/test/{i}", merged_evolving_test_trajectories)
     np.save(f"../data/{args.dataset}/train_init", train_init)
