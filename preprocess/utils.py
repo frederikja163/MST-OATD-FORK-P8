@@ -162,18 +162,10 @@ def split_files_for_evolving(datafile):
     train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])   
     print(f"train_evolving size: {train_evolving.size} test_evolving size: {test_evolving.size}\n") 
     
-    excess_train = train_evolving[-(train_evolving.size%args.epochs):]
-    excess_test = test_evolving[-(test_evolving.size%args.epochs):]
     all_train_evolving = np.split(train_evolving[:-(train_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
     all_test_evolving =  np.split(test_evolving[:-(test_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
-    print(f"all train evolving: {all_train_evolving[0]}\nall test evolving: {all_test_evolving[0]}\n")
-    print(f"excess train: {excess_train[0]}\n excess test: {excess_test[0]}\n")
     #save as files
     for i in range (0, args.epochs-1):
-        if(excess_train[i]):
-            all_train_evolving[i] = np.insert(all_train_evolving[i], 0, excess_train[i])
-        if(excess_test[i]):
-            all_test_evolving[i] = np.insert(all_test_evolving[i], 0, excess_test[i])
         np.save(f"../data/{args.dataset}/train/{i}", all_train_evolving[i])
         np.save(f"../data/{args.dataset}/test/{i}", all_test_evolving[i])
     np.save(f"../data/{args.dataset}/train_init", train_init)
