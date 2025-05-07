@@ -150,11 +150,8 @@ def split_and_merge_files(files):
     print('Finished!')
 
 def split_files_for_evolving(datafile):
-    # this version works specifically for Chengdu since it conveniently gives an array of the trajectories
-    trajectories = np.array()
-
     #load entire npy file which is passed
-    trajectories.append(np.load(datafile, allow_pickle=True))
+    trajectories = np.load(datafile, allow_pickle=True)
     #split into init vs evolving 
     init, evolving = np.split(trajectories, [int(args.epoch_split*len(trajectories))])
     print(f"init size: {init.size} evolving size: {evolving.size}\n")
