@@ -164,8 +164,8 @@ def split_files_for_evolving(datafile):
     
     excess_train = train_evolving[-(train_evolving.size%args.epochs):]
     excess_test = test_evolving[-(test_evolving.size%args.epochs):]
-    all_train_evolving = np.split(train_evolving[:-args.epochs], args.epochs if args.epochs>0 else 1)
-    all_test_evolving =  np.split(test_evolving[:-args.epochs], args.epochs if args.epochs>0 else 1)
+    all_train_evolving = np.split(train_evolving[:-(train_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
+    all_test_evolving =  np.split(test_evolving[:-(test_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
     #save as files
     for i in range (0, args.epochs-1):
         if(excess_train[i]):
