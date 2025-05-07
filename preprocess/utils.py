@@ -141,11 +141,8 @@ def merge(files, outfile):
 
 # merges 80% of the files into train_init.npy and 20% into test_init.npy
 def split_and_merge_files(files):
-    train_files, test_files = train_test_split(files, test_size=0.2, random_state=42)
-    print('Merging train trajectories')
-    merge(train_files, "train_init")
-    print('Merging test trajectories')
-    merge(test_files, "test_init")
+    print('Merging chengdu files')
+    merge(files, "preprocessed_data")
 
     print('Finished!')
 
