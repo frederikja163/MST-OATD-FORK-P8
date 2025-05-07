@@ -161,14 +161,21 @@ def split_files_for_evolving(datafile):
     print(f"train_init size: {train_init.size} test_init size: {test_init.size}\n")
     train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])   
     print(f"train_evolving size: {train_evolving.size} test_evolving size: {test_evolving.size}\n") 
+    
+    excess_train = all_train_evolving[-(all_train_evolving.size%args.epochs):]
+    excess_test = all_test_evolving[-(all_test_evolving.size%args.epochs):]
+    all_train_evolving = all_train_evolving[:-args.epochs]
+    all_test_evolving = all_test_evolving[:-args.epochs]
     all_train_evolving = np.split(train_evolving, args.epochs if args.epochs>0 else 1)
     all_test_evolving =  np.split(test_evolving, args.epochs if args.epochs>0 else 1)
     #save as files
     for i in range (0, args.epochs-1):
-        merged_evolving_train_trajectories=all_train_evolving[i], axis=0
-        merged_evolving_test_trajectories= all_train_evolving[i], axis=0
-        np.save(f"../data/{args.dataset}/train/{i}", merged_evolving_train_trajectories)
-        np.save(f"../data/{args.dataset}/test/{i}", merged_evolving_test_trajectories)
+        if(excess_train[i]):
+            all_train_evolving[i].append(excess_train[i])
+        if(excess_test[i]):
+            all_test_evolving[i].append(excess_test[i])
+        np.save(f"../data/{args.dataset}/train/{i}", all_train_evolving[i])
+        np.save(f"../data/{args.dataset}/test/{i}", all_test_evolving[i])
     np.save(f"../data/{args.dataset}/train_init", train_init)
     np.save(f"../data/{args.dataset}/test_init", test_init)
 
