@@ -161,8 +161,9 @@ def split_files_for_evolving(datafile):
     #TODO: test if the np.split based on percentage actually works
     #split init and evolving further
     train_init, test_init = np.split(init, [int(0.8*len(init))])
-    print(f"train_init size: {train_init.size} evolving_init size: {train_init.size}\n")
-    train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])    
+    print(f"train_init size: {train_init.size} test_init size: {test_init.size}\n")
+    train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])   
+    print(f"train_evolving size: {train_evolving.size} test_evolving size: {test_evolving.size}\n") 
     all_train_evolving = np.split(train_evolving, args.epochs if args.epochs>0 else 1)
     all_test_evolving =  np.split(test_evolving, args.epochs if args.epochs>0 else 1)
     #save as files
