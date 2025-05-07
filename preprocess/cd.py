@@ -25,23 +25,23 @@ def main():
 
     boundary = {'min_lat': 30.6, 'max_lat': 30.75, 'min_lon': 104, 'max_lon': 104.16}
     columns = ['id', 'lat', 'lon', 'state', 'timestamp']
-    #grid_size = create_grid(boundary)
+    grid_size = create_grid(boundary)
 
-    #manager = Manager()
-    #traj_nums = manager.list()
-    #point_nums = manager.list()
+    manager = Manager()
+    traj_nums = manager.list()
+    point_nums = manager.list()
 
-    #pool = Pool(args.processes)
-    #pool.map(partial(preprocess, shortest=30, longest=100, boundary=boundary, convert_date=convert_date,
-    #                 timestamp_gap=timestamp_gap, traj_nums=traj_nums, point_nums=point_nums, grid_size=grid_size, columns=columns), files)
+    pool = Pool(args.processes)
+    pool.map(partial(preprocess, shortest=30, longest=100, boundary=boundary, convert_date=convert_date,
+                     timestamp_gap=timestamp_gap, traj_nums=traj_nums, point_nums=point_nums, grid_size=grid_size, columns=columns), files)
 
-    #pool.close()
-    #pool.join()
+    pool.close()
+    pool.join()
 
-    #print("Total trajectory num:", sum(traj_nums))
-    #print("Total point num:", sum(point_nums))
+    print("Total trajectory num:", sum(traj_nums))
+    print("Total point num:", sum(point_nums))
 
-    #split_and_merge_files(files)
+    split_and_merge_files(files)
 
     #TODO: for testing, need to call with path to combined .npy file dynamically
     split_files_for_evolving(f"../data/{args.dataset}/data_train_init.npy")
