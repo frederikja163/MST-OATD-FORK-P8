@@ -169,9 +169,9 @@ def split_files_for_evolving(datafile):
     #save as files
     for i in range (0, args.epochs-1):
         if(excess_train[i]):
-            all_train_evolving[i].append(excess_train[i])
+            all_train_evolving[i].append([excess_train[i]], axis = 0)
         if(excess_test[i]):
-            all_test_evolving[i].append(excess_test[i])
+            all_test_evolving[i].append([excess_test[i]], axis = 0)
         np.save(f"../data/{args.dataset}/train/{i}", all_train_evolving[i])
         np.save(f"../data/{args.dataset}/test/{i}", all_test_evolving[i])
     np.save(f"../data/{args.dataset}/train_init", train_init)
