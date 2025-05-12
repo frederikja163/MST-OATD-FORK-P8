@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 mkdir -p data/<dataset_name>
 cd preprocess
-python preprocess_<dataset_name>.py
+python preprocess.py --dataset <dataset_name>
 cd ..
 mkdir logs models probs
 ```
