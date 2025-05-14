@@ -41,6 +41,8 @@ def main():
     print("Total trajectory num:", sum(traj_nums))
     print("Total point num:", sum(point_nums))
 
-    split_and_merge_files(files)
+    print('Merging chengdu files')
+    merge(files, "preprocessed_data")
+    print('Finished!')
 
     split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
