@@ -61,6 +61,8 @@ def perturb_batch(batch_x, level, prob, selected_idx):
         interval = 10
 
     for idx, traj in enumerate(batch_x):
+        if isinstance(traj, int):
+            print(traj)
 
         anomaly_len = int(len(traj) * prob)
         anomaly_st_loc = np.random.randint(1, len(traj) - anomaly_len - 1)
