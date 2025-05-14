@@ -40,4 +40,9 @@ def main():
     print("Total trajectory num:", sum(traj_nums))
     print("Total point num:", sum(point_nums))
 
+    #TODO: test! this is 1:1 copy of how cd does it but given that the files are preprocessed the same way i see no reason this shouldnt work
+    print('Merging tdrive files')
+    merge(files, "preprocessed_data")
+    print('Finished!')
+    split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
 
