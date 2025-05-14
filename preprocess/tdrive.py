@@ -33,7 +33,7 @@ def main():
     point_nums = manager.list()
 
     pool = Pool(args.processes)
-    pool.map(partial(preprocess, shortest=2, longest=20, boundary=boundary, convert_date=convert_date,
+    pool.map(partial(preprocess, shortest=30, longest=100, boundary=boundary, convert_date=convert_date,
                      timestamp_gap=timestamp_gap, traj_nums=traj_nums, point_nums=point_nums, columns=columns, grid_size=grid_size), files)
 
     pool.close()
