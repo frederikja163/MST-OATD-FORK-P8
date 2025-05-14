@@ -110,6 +110,9 @@ if __name__ == '__main__':
 
     np.save(f"./data/{args.dataset}/outliers_data_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
     np.save(f"./data/{args.dataset}/outliers_idx_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
+    ## data saved here, so ought to be simple to just split then save seperately, though it is important that the outlier idx is split correctly so the order is preserved
+
+
 
     if args.dataset == 'porto':
         for i in range(1, 11):

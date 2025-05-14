@@ -139,12 +139,6 @@ def merge(files, outfile):
     merged_trajectories = np.concatenate(trajectories, axis=0)
     np.save(f"../data/{args.dataset}/{outfile}", merged_trajectories)
 
-# merges 80% of the files into train_init.npy and 20% into test_init.npy
-def split_and_merge_files(files):
-    print('Merging chengdu files')
-    merge(files, "preprocessed_data")
-
-    print('Finished!')
 
 def split_files_for_evolving(datafile):
     #load entire npy file which is passed
