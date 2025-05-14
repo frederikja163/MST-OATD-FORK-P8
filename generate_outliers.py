@@ -102,6 +102,8 @@ if __name__ == '__main__':
         map_size = (51, 119)
     elif args.dataset == 'cd':
         map_size = (167, 154)
+    elif args.dataset == 'tdrive':
+        map_size = (89, 69)
 
     data = np.load(f"./data/{args.dataset}/test_init.npy", allow_pickle=True)
     outliers_trajs, outliers_idx = generate_outliers(data)
