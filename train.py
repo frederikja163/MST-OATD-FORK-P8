@@ -68,7 +68,7 @@ if __name__ == "__main__":
         t_token_size = 5760
 
     elif args.dataset == 'cd':
-        s_token_size = 1638 #167 * 154
+        s_token_size = 25718 #167 * 154 edited to attempt to bypass issue
         t_token_size = 8640
 
     main()

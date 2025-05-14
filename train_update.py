@@ -172,12 +172,12 @@ def main():
             all_pr_auc.append(pr_auc)
             i+=1
 
-    if args.dataset == 'cd':
-        traj_path = "../data/cd/train/"
+    if args.dataset == 'cd' or args.dataset == 'tdrive':
+        traj_path = f"../data/{args.dataset}/train/"
         path_list = os.listdir(traj_path)
         i = 0
         for file in path_list:
-            train_trajs_new = np.load(f"../data/cd/train/{i}.npy",
+            train_trajs_new = np.load(f"../data/{args.dataset}/train/{i}.npy",
                                       allow_pickle=True)
             print(len(train_trajs_new))
             test_trajs = np.load(
