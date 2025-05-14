@@ -132,8 +132,11 @@ def main():
     all_pr_auc = []
 
     if args.dataset == 'porto':
-        for i in range(1, 11):
-            train_trajs_new = np.load('./data/{}/train_data_{}.npy'.format(args.dataset, i),
+        traj_path = "../data/porto/train/"
+        path_list = os.listdir(traj_path)
+        i = 0
+        for file in path_list:
+            train_trajs_new = np.load('./data/{}/train/{}.npy'.format(args.dataset, i),
                                       allow_pickle=True)
             test_trajs = np.load(
                 './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, i, args.distance, args.fraction,
@@ -167,6 +170,7 @@ def main():
                 pr_auc = test_update(test_trajs[test_index], labels[test_index], i)
 
             all_pr_auc.append(pr_auc)
+            i+=1
 
     if args.dataset == 'cd':
         traj_path = "../data/cd/train/"
