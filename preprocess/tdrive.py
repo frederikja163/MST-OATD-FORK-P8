@@ -22,7 +22,9 @@ def main():
     print('Preprocessing TDrive')
     files = os.listdir(f"../datasets/{args.dataset}")
 
-    boundary = {'min_lat': 0.1, 'max_lat': 90, 'min_lon': 0.1, 'max_lon': 250}
+    #boundary = {'min_lat': 0.1, 'max_lat': 90, 'min_lon': 0.1, 'max_lon': 250}
+    #TODO: test boundary only, replace with previous before final push
+    boundary = {'min_lat': 39.5, 'max_lat': 40.3, 'min_lon': 116, 'max_lon': 116.8}
     columns = ['id', 'timestamp', 'lon', 'lat']
     grid_size = create_grid(boundary)
 
