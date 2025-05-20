@@ -123,7 +123,7 @@ def get_category(trajs):
 
 def main():
     random.seed(1234)
-    train_trajs = np.load('./data/{}/train_data_init.npy'.format(args.dataset),
+    train_trajs = np.load('./data/{}/train_init.npy'.format(args.dataset),
                           allow_pickle=True)[-args.train_num:]
 
     if args.update_mode == 'rank':
