@@ -177,7 +177,7 @@ def main():
         path_list = os.listdir(traj_path)
         i = 0
         for file in path_list:
-            train_trajs_new = np.load(f"../data/{args.dataset}/train/{i}.npy",
+            train_trajs_new = np.load(f"./data/{args.dataset}/train/{i}.npy",
                                       allow_pickle=True)
             print(len(train_trajs_new))
             test_trajs = np.load(
