@@ -132,7 +132,7 @@ def main():
     all_pr_auc = []
 
     if args.dataset == 'porto':
-        traj_path = "../data/porto/train/"
+        traj_path = "./data/porto/train/"
         path_list = os.listdir(traj_path)
         i = 0
         for file in path_list:
@@ -173,7 +173,7 @@ def main():
             i+=1
 
     if args.dataset == 'cd' or args.dataset == 'tdrive':
-        traj_path = f"../data/{args.dataset}/train/"
+        traj_path = f"./data/{args.dataset}/train/"
         path_list = os.listdir(traj_path)
         i = 0
         for file in path_list:
