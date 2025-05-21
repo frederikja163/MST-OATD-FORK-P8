@@ -5,7 +5,7 @@ import random
 from utils import *
 from config import args
 
-def preprocess(trajectories, shortest, longest, grid_size, boundary):
+def preprocess(trajectories, shortest, longest, grid_size, boundary, invalid_points):
     processed_trajectories = []
 
     traj_num, point_num = 0, 0
@@ -21,6 +21,7 @@ def preprocess(trajectories, shortest, longest, grid_size, boundary):
         timestamp = traj.TIMESTAMP
 
         if len(polyline) < shortest:
+            invalid_points += len(polyline)
             continue
 
         for lng, lat in polyline:
@@ -36,6 +37,7 @@ def preprocess(trajectories, shortest, longest, grid_size, boundary):
                 timestamp += 15  # In porto dataset, the sampling rate is 15
 
             else:
+                invalid_points += len(polyline)
                 valid = False
                 break
 
@@ -48,7 +50,9 @@ def preprocess(trajectories, shortest, longest, grid_size, boundary):
             if len(traj_seq) <= longest:
                 processed_trajectories.append(traj_seq)
             else:
-                processed_trajectories += cut_trajectory(traj_seq, longest, shortest)
+                processed_trajectories += ensure_size(traj_seq, longest, shortest)
+        else:
+            invalid_points += len(polyline)
 
     traj_num += len(processed_trajectories)
 
@@ -61,27 +65,28 @@ def time_convert(timestamp):
     return datetime.datetime.fromtimestamp(timestamp)
 
 def main():
-    random.seed(1234)
-    np.random.seed(1234)
-
     boundary = {'min_lat': 41.140092, 'max_lat': 41.185969, 'min_lon': -8.690261, 'max_lon': -8.549155}
     shortest, longest = 20, 50
 
-    grid_size = create_grid(boundary)
-    print('Preprocessing Porto')
+    logger = get_logger(f"../logs/{args.dataset}.log")
+    logger.info(f'Preprocessing {args.dataset}')
+
+    grid_size = create_grid(boundary, logger)
+
+    invalid_points = 0
 
     # Read csv file
     file = "porto.csv"
     trajectories = pd.read_csv(f"../datasets/{args.dataset}/{file}", header=0, usecols=['POLYLINE', 'TIMESTAMP'])
-    trajectories['TIMESTAMP'].apply(time_convert)
+    trajectories['datetime'] = trajectories['TIMESTAMP'].apply(time_convert)
 
     # Initial dataset
     start_time = datetime.datetime(2013, 7, 1, 0, 0, 0)
     end_time = datetime.datetime(2013, 9, 1, 0, 0, 0)
 
     # Select trajectories from start time to end time
-    bounded_trajectories = trajectories[start_time <= trajectories['TIMESTAMP'] < end_time]
-    preprocessed_trajectories, traj_num, point_num = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary)
+    bounded_trajectories = trajectories[(trajectories['datetime'] >= start_time) & (trajectories['datetime'] < end_time)]
+    preprocessed_trajectories, traj_num, point_num = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary, invalid_points)
     train_data, test_data = train_test_split(preprocessed_trajectories, test_size=0.2, random_state=42)
 
     np.save(f"../data/{args.dataset}/train_data_init.npy", np.array(train_data, dtype=object))
@@ -92,9 +97,9 @@ def main():
     # Evolving dataset
     for month in range(1, 11):
         end_time = start_time + datetime.timedelta(days=30)
-        bounded_trajectories = trajectories[start_time <= trajectories['TIMESTAMP'] < end_time]
+        bounded_trajectories = trajectories[(trajectories['datetime'] >= start_time) & (trajectories['datetime'] < end_time)]
 
-        preprocessed_trajectories, traj_numm, point_numm = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary)
+        preprocessed_trajectories, traj_numm, point_numm = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary, invalid_points)
         traj_num += traj_numm
         point_numm += point_numm
         train_data, test_data = train_test_split(preprocessed_trajectories, test_size=0.2, random_state=42)
@@ -105,7 +110,8 @@ def main():
         start_time = end_time
 
     # Dataset statistics
-    print("Total trajectory num:", traj_num)
-    print("Total point num:", point_num)
+    logger.info(f"Total trajectory num: {traj_num}")
+    logger.info(f"Total point num: {point_num}")
+    logger.info(f"Invalid points: {invalid_points}")
 
-    print('Finished!')
+    logger.info('Finished!')

@@ -1,17 +1,17 @@
 import datetime
 import math
-import os
 from datetime import timedelta
 
 import numpy as np
 
 from config import args
+import json
 
 
 # Trajectory location offset
 def perturb_point(point, level, offset=None):
-    point, times = point[0], point[1]
-    x, y = int(point // map_size[1]), int(point % map_size[1])
+    point_id, grid_loc, timestamp = point
+    x, y = convert(grid_loc)
 
     if offset is None:
         offset = [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, -1], [-1, 1], [1, -1]]
@@ -20,15 +20,14 @@ def perturb_point(point, level, offset=None):
     else:
         x_offset, y_offset = offset
 
-    if 0 <= x + x_offset * level < map_size[0] and 0 <= y + y_offset * level < map_size[1]:
+    if 0 <= x + x_offset * level < lat_grid_num and 0 <= y + y_offset * level < lon_grid_num:
         x += x_offset * level
         y += y_offset * level
+    return [point_id, int(x * lon_grid_num + y), timestamp]
 
-    return [int(x * map_size[1] + y), times]
 
-
-def convert(point):
-    x, y = int(point // map_size[1]), int(point % map_size[1])
+def convert(grid_loc):
+    x, y = int(grid_loc // lon_grid_num), int(grid_loc % lon_grid_num)
     return [x, y]
 
 
@@ -45,48 +44,55 @@ def time_calcuate(vec, s):
 # Trajectory time offset
 def perturb_time(traj, st_loc, end_loc, time_offset, interval):
     for i in range(st_loc, end_loc):
-        traj[i][1] = time_calcuate(traj[i][1], int((i - st_loc + 1) * time_offset * interval))
+        traj[i][2] = time_calcuate(traj[i][2], int((i - st_loc + 1) * time_offset * interval))
 
     for i in range(end_loc, len(traj)):
-        traj[i][1] = time_calcuate(traj[i][1], int((end_loc - st_loc) * time_offset * interval))
+        traj[i][2] = time_calcuate(traj[i][2], int((end_loc - st_loc) * time_offset * interval))
     return traj
 
 
 def perturb_batch(batch_x, level, prob, selected_idx):
     noisy_batch_x = []
+    iterator = enumerate(batch_x)
+    i = 0
+    traj_acc = [next(iterator)[1]]
 
-    if args.dataset == 'porto':
-        interval = 15
-    else:
-        interval = 10
+    for _, point in enumerate(batch_x):
+        # point = [id, grid_num, [time]]
+        if point[0] == traj_acc[0][0]:
+            traj_acc.append(point)
+            continue
+        noisy_batch_x += create_anomaly(traj_acc, level, prob, selected_idx, i)
 
-    for idx, traj in enumerate(batch_x):
+        traj_acc = [point]
+        i += 1
 
-        anomaly_len = int(len(traj) * prob)
-        anomaly_st_loc = np.random.randint(1, len(traj) - anomaly_len - 1)
-
-        if idx in selected_idx:
-            anomaly_ed_loc = anomaly_st_loc + anomaly_len
-
-            p_traj = traj[:anomaly_st_loc] + [perturb_point(p, level) for p in
-                                              traj[anomaly_st_loc:anomaly_ed_loc]] + traj[anomaly_ed_loc:]
-
-            dis = max(distance(convert(traj[anomaly_st_loc][0]), convert(traj[anomaly_ed_loc][0])), 1)
-            time_offset = (level * 2) / dis
-
-            p_traj = perturb_time(p_traj, anomaly_st_loc, anomaly_ed_loc, time_offset, interval)
-
-        else:
-            p_traj = traj
-
-        p_traj = p_traj[:int(len(p_traj) * args.obeserved_ratio)]
-        noisy_batch_x.append(p_traj)
+    noisy_batch_x += create_anomaly(traj_acc, level, prob, selected_idx, i)
 
     return noisy_batch_x
 
+def create_anomaly(traj, level, prob, selected_idx, idx):
+    if idx in selected_idx:
+        anomaly_len = int(len(traj) * prob)
+        anomaly_start_location = np.random.randint(1, len(traj) - anomaly_len - 1)
+
+        anomaly_end_location = anomaly_start_location + anomaly_len
+
+        p_traj = (traj[:anomaly_start_location]
+                  + [perturb_point(p, level) for p in traj[anomaly_start_location:anomaly_end_location]]
+                  + traj[anomaly_end_location:])
+
+        dist = max(distance(convert(traj[anomaly_start_location][0]), convert(traj[anomaly_end_location][0])), 1)
+        time_offset = (level * 2) / dist
+
+        p_traj = perturb_time(p_traj, anomaly_start_location, anomaly_end_location, time_offset, interval)
+    else:
+        p_traj = traj
+
+    return p_traj[:int(len(p_traj) * args.obeserved_ratio)]
+
 
 def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=args.fraction):
-    traj_num = len(trajs)
     selected_idx = np.random.randint(0, traj_num, size=int(traj_num * ratio))
     new_trajs = perturb_batch(trajs, level, point_prob, selected_idx)
     return new_trajs, selected_idx
@@ -98,10 +104,12 @@ if __name__ == '__main__':
     print(f"Dataset: {args.dataset}")
     print(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
+    with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
+        (lat_grid_num, lon_grid_num, traj_num) = tuple(json.load(f))
+
+    interval = 10
     if args.dataset == 'porto':
-        map_size = (51, 119)
-    elif args.dataset == 'cd':
-        map_size = (167, 154)
+        interval = 15
 
     data = np.load(f"./data/{args.dataset}/test_init.npy", allow_pickle=True)
     outliers_trajs, outliers_idx = generate_outliers(data)

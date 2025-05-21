@@ -1,7 +1,5 @@
 import datetime
 import time
-from functools import partial
-from multiprocessing import Pool, Manager
 
 from utils import *
 from config import args
@@ -19,25 +17,11 @@ def timestamp_gap(str1, str2):
     return (timestamp2 - timestamp1).total_seconds()
 
 def main():
-    print('Preprocessing TDrive')
-    files = os.listdir(f"../datasets/{args.dataset}")
-
-    boundary = {'min_lat': 0.1, 'max_lat': 90, 'min_lon': 0.1, 'max_lon': 250}
+    logger = get_logger(f"../logs/{args.dataset}.log")
+    boundary = {'min_lat': 39.5, 'max_lat': 40.3, 'min_lon': 116, 'max_lon': 116.8}
     columns = ['id', 'timestamp', 'lon', 'lat']
-    grid_size = create_grid(boundary)
+    grid_size = create_grid(boundary, logger)
+    shortest = 30
+    longest = 100
 
-    manager = Manager()
-    traj_nums = manager.list()
-    point_nums = manager.list()
-
-    pool = Pool(args.processes)
-    pool.map(partial(preprocess, shortest=2, longest=20, boundary=boundary, convert_date=convert_date,
-                     timestamp_gap=timestamp_gap, traj_nums=traj_nums, point_nums=point_nums, columns=columns, grid_size=grid_size), files)
-
-    pool.close()
-    pool.join()
-
-    print("Total trajectory num:", sum(traj_nums))
-    print("Total point num:", sum(point_nums))
-
-
+    multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_gap, columns, grid_size)
