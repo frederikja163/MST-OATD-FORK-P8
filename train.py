@@ -18,7 +18,7 @@ def main():
     train_data = TrajectoryDataset(train_trajs)
     test_data = TrajectoryDataset(test_trajs)
 
-    labels = np.zeros(len(test_trajs))
+    labels = np.zeros(len(test_data))
     for i in outliers_idx:
         labels[i] = 1
 
