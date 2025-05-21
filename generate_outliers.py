@@ -6,6 +6,7 @@ import numpy as np
 
 from config import args
 import json
+import os
 
 
 # Trajectory location offset
@@ -119,14 +120,17 @@ if __name__ == '__main__':
     np.save(f"./data/{args.dataset}/outliers_data_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
     np.save(f"./data/{args.dataset}/outliers_idx_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
 
-    if args.dataset == 'porto':
-        for i in range(1, 11):
-            data = np.load(f"./data/{args.dataset}/test_data_{i}.npy", allow_pickle=True)
-            outliers_trajs, outliers_idx = generate_outliers(data)
-            outliers_trajs = np.array(outliers_trajs, dtype=object)
-            outliers_idx = np.array(outliers_idx)
 
-            np.save(
-                f"./data/{args.dataset}/outliers_data_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
-            np.save(
-                f"./data/{args.dataset}/outliers_idx_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
+    files = os.listdir(f"./data/{args.dataset}/test/")
+    i=0
+    for file in files:
+        data = np.load(f"./data/{args.dataset}/test/{i}.npy", allow_pickle=True)
+        outliers_trajs, outliers_idx = generate_outliers(data)
+        outliers_trajs = np.array(outliers_trajs, dtype=object)
+        outliers_idx = np.array(outliers_idx)
+
+        np.save(
+            f"./data/{args.dataset}/outliers_data_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
+        np.save(
+            f"./data/{args.dataset}/outliers_idx_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
+        i+=1

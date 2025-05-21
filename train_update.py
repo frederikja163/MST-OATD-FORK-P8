@@ -123,7 +123,7 @@ def get_category(trajs):
 
 def main():
     random.seed(1234)
-    train_trajs = np.load('./data/{}/train_data_init.npy'.format(args.dataset),
+    train_trajs = np.load('./data/{}/train_init.npy'.format(args.dataset),
                           allow_pickle=True)[-args.train_num:]
 
     if args.update_mode == 'rank':
@@ -132,8 +132,11 @@ def main():
     all_pr_auc = []
 
     if args.dataset == 'porto':
-        for i in range(1, 11):
-            train_trajs_new = np.load('./data/{}/train_data_{}.npy'.format(args.dataset, i),
+        traj_path = "./data/porto/train/"
+        path_list = os.listdir(traj_path)
+        i = 0
+        for file in path_list:
+            train_trajs_new = np.load('./data/{}/train/{}.npy'.format(args.dataset, i),
                                       allow_pickle=True)
             test_trajs = np.load(
                 './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, i, args.distance, args.fraction,
@@ -167,23 +170,22 @@ def main():
                 pr_auc = test_update(test_trajs[test_index], labels[test_index], i)
 
             all_pr_auc.append(pr_auc)
+            i+=1
 
-    if args.dataset == 'cd':
-        traj_path = "../datasets/chengdu"
+    if args.dataset == 'cd' or args.dataset == 'tdrive':
+        traj_path = f"./data/{args.dataset}/train/"
         path_list = os.listdir(traj_path)
-        path_list.sort(key=lambda x: x.split('.'))
-        path_list = path_list[3: 10]
-
-        for i in range(len(path_list)):
-            train_trajs_new = np.load('./data/{}/train_data_{}.npy'.format(args.dataset, path_list[i][:8]),
+        i = 0
+        for file in path_list:
+            train_trajs_new = np.load(f"./data/{args.dataset}/train/{i}.npy",
                                       allow_pickle=True)
             print(len(train_trajs_new))
             test_trajs = np.load(
-                './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, path_list[i][:8], args.distance,
+                './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, i, args.distance,
                                                                  args.fraction, args.obeserved_ratio),
                 allow_pickle=True)
             outliers_idx = np.load(
-                "./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, path_list[i][:8], args.distance,
+                "./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, i, args.distance,
                                                                 args.fraction, args.obeserved_ratio),
                 allow_pickle=True)
 
@@ -222,6 +224,11 @@ def main():
                 pr_auc = test_update(test_trajs, labels, i)
 
             all_pr_auc.append(pr_auc)
+            i+=1
+
+
+
+    ##TODO: need to make case for tdrive too, can likely be based on chengdu given same preprocessing
     print('------------------------')
     results = "%.4f" % (sum(all_pr_auc) / len(all_pr_auc))
     print('Average PR_AUC:', results)

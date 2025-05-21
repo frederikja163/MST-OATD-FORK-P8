@@ -147,7 +147,6 @@ def merge(files, outfile):
             trajectories.append(file_trajectories)
         except FileNotFoundError: # empty files are skipped
             continue
-
     merged_trajectories = np.concatenate(trajectories, axis=0)
     np.save(f"../data/{args.dataset}/{outfile}", merged_trajectories)
 
@@ -189,6 +188,12 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
     with open(f'../data/{args.dataset}/metadata.json', 'w') as f:
         json.dump(list((lat_grid_num, lon_grid_num, traj_sum)), f)
 
+    print(f'Merging {args.dataset} files')
+    merge(files, "preprocessed_data")
+    print('Finished!')
+
+    split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
+
     split_and_merge_files(files, logger)
 
 def get_logger(filename, verbosity=1, name=None):
@@ -208,6 +213,27 @@ def get_logger(filename, verbosity=1, name=None):
     logger.addHandler(sh)
 
     return logger
+
+def split_files_for_evolving(datafile):
+    #load entire npy file which is passed
+    trajectories = np.load(datafile, allow_pickle=True)
+    #split into init vs evolving
+    init, evolving = np.split(trajectories, [int(args.epoch_split*len(trajectories))])
+    print(f"init size: {init.size} evolving size: {evolving.size}\n")
+    #split init and evolving further
+    train_init, test_init = np.split(init, [int(0.8*len(init))])
+    print(f"train_init size: {train_init.size} test_init size: {test_init.size}\n")
+    train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])
+    print(f"train_evolving size: {train_evolving.size} test_evolving size: {test_evolving.size}\n")
+
+    all_train_evolving = np.split(train_evolving[:-(train_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
+    all_test_evolving =  np.split(test_evolving[:-(test_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
+    #save as files
+    for i in range (0, args.epochs):
+        np.save(f"../data/{args.dataset}/train/{i}", all_train_evolving[i])
+        np.save(f"../data/{args.dataset}/test/{i}", all_test_evolving[i])
+    np.save(f"../data/{args.dataset}/train_init", train_init)
+    np.save(f"../data/{args.dataset}/test_init", test_init)
 
 
 def main():

@@ -9,6 +9,8 @@ parser.add_argument("--find_boundary", type=bool, default=False)
 parser.add_argument("--processes", type=int, default=10)
 parser.add_argument("--chunk_size", type=int, default=800)
 
+parser.add_argument("--epochs", type=int, default=10)
+parser.add_argument("--epoch_split", type=float, default=0.5)
 
 
 args = parser.parse_args()

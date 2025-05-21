@@ -81,37 +81,14 @@ def main():
     trajectories['datetime'] = trajectories['TIMESTAMP'].apply(time_convert)
 
     # Initial dataset
-    start_time = datetime.datetime(2013, 7, 1, 0, 0, 0)
-    end_time = datetime.datetime(2013, 9, 1, 0, 0, 0)
+    preprocessed_trajectories, traj_num, point_num = preprocess(trajectories, shortest, longest, grid_size, boundary)
 
-    # Select trajectories from start time to end time
-    bounded_trajectories = trajectories[(trajectories['datetime'] >= start_time) & (trajectories['datetime'] < end_time)]
-    preprocessed_trajectories, traj_num, point_num = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary, invalid_points)
-    train_data, test_data = train_test_split(preprocessed_trajectories, test_size=0.2, random_state=42)
-
-    np.save(f"../data/{args.dataset}/train_data_init.npy", np.array(train_data, dtype=object))
-    np.save(f"../data/{args.dataset}/test_data_init.npy", np.array(test_data, dtype=object))
-
-    start_time = datetime.datetime(2013, 9, 1, 0, 0, 0)
-
-    # Evolving dataset
-    for month in range(1, 11):
-        end_time = start_time + datetime.timedelta(days=30)
-        bounded_trajectories = trajectories[(trajectories['datetime'] >= start_time) & (trajectories['datetime'] < end_time)]
-
-        preprocessed_trajectories, traj_numm, point_numm = preprocess(bounded_trajectories, shortest, longest, grid_size, boundary, invalid_points)
-        traj_num += traj_numm
-        point_numm += point_numm
-        train_data, test_data = train_test_split(preprocessed_trajectories, test_size=0.2, random_state=42)
-
-        np.save(f"../data/{args.dataset}/train_data_{month}.npy", np.array(train_data, dtype=object))
-        np.save(f"../data/{args.dataset}/test_data_{month}.npy", np.array(test_data, dtype=object))
-
-        start_time = end_time
+    np.save(f"../data/{args.dataset}/preprocessed_data.npy", np.array(preprocessed_trajectories, dtype=object))
 
     # Dataset statistics
     logger.info(f"Total trajectory num: {traj_num}")
     logger.info(f"Total point num: {point_num}")
     logger.info(f"Invalid points: {invalid_points}")
 
+    split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
     logger.info('Finished!')
