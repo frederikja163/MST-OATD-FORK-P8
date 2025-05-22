@@ -181,7 +181,7 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
     merge(files, "preprocessed_data")
     logger.info(f"Done merging, splitting into init and evolving")
 
-    split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
+    split_files_for_evolving(logger, f"../data/{args.dataset}/preprocessed_data.npy")
     logger.info('Finished!')
 
 def get_logger(filename, verbosity=1, name=None):
