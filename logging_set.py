@@ -17,6 +17,4 @@ def get_logger(filename, verbosity=1, name=None):
     sh.setFormatter(formatter)
     logger.addHandler(sh)
 
-    locale.setlocale(locale.LC_ALL, 'en_US')
-
     return logger
