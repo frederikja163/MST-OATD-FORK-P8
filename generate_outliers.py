@@ -61,7 +61,8 @@ def perturb_batch(batch_x, level, prob, selected_idx):
     for _, point in enumerate(batch_x):
         # point = [id, grid_num, [time]]
         if point[0] == traj_acc[0][0]:
-            traj_acc.append(point)
+            # replaces the traj id with a dense index rather than sparse
+            traj_acc.append([i, point[1], point[2]])
             continue
         noisy_batch_x += create_anomaly(traj_acc, level, prob, selected_idx, i)
 
