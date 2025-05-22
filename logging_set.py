@@ -21,4 +21,7 @@ def get_logger(filename, verbosity=1, name=None):
 
     locale.setlocale(locale.LC_ALL, 'de_DE')
 
+    sys.stdout = logger
+    sys.stderr = logger
+
     return logger
