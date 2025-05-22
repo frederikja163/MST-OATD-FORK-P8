@@ -201,43 +201,65 @@ def get_logger(filename, verbosity=1, name=None):
     sh.setFormatter(formatter)
     logger.addHandler(sh)
 
-    sys.stdout = logger
-    sys.stderr = logger
-
     locale.setlocale(locale.LC_ALL, 'de_DE')
 
     return logger
 
 def split_files_for_evolving(logger, datafile):
-    #load entire npy file which is passed
+    # load entire npy file which is passed
     points = np.load(datafile, allow_pickle=True)
-
-    # Get unique trajectory IDs
+    
+    # Get unique trajectory IDs and split them into init and evolving
     unique_ids = np.unique(points[:, 0])
-
-    # Split trajectory IDs into init vs evolving
     init_ids, evolving_ids = np.split(unique_ids, [int(args.epoch_split * len(unique_ids))])
     logger.info(f"init size: {init_ids.size} evolving size: {evolving_ids.size}\n")
-
-    # 80% train, 20% test
+    
+    # Split init and evolving into train/test
     train_init_ids, test_init_ids = np.split(init_ids, [int(0.8 * len(init_ids))])
     logger.info(f"train_init size: {train_init_ids.size} test_init size: {test_init_ids.size}\n")
+    
     train_evolving_ids, test_evolving_ids = np.split(evolving_ids, [int(0.8 * len(evolving_ids))])
     logger.info(f"train_evolving size: {train_evolving_ids.size} test_evolving size: {test_evolving_ids.size}\n")
-
-    all_train_evolving_ids = np.split(train_evolving_ids[:-(train_evolving_ids.size%args.epochs)], args.epochs if args.epochs>0 else 1)
-    all_test_evolving_ids =  np.split(test_evolving_ids[:-(test_evolving_ids.size%args.epochs)], args.epochs if args.epochs>0 else 1)
-    #save as files
-    for i in range (0, args.epochs):
-        train_evolving = points[np.isin(points[:, 0], all_train_evolving_ids[i])]
-        np.save(f"../data/{args.dataset}/train/{i}", train_evolving)
-        test_evolving = points[np.isin(points[:, 0], all_test_evolving_ids[i])]
-        np.save(f"../data/{args.dataset}/test/{i}", test_evolving)
-
-    train_init = points[np.isin(points[:, 0], train_init_ids)]
-    np.save(f"../data/{args.dataset}/train_init", train_init)
-    test_init = points[np.isin(points[:, 0], train_init_ids)]
-    np.save(f"../data/{args.dataset}/test_init", test_init)
+    
+    # Split evolving data into epochs
+    train_evolving_ids = train_evolving_ids[:-(train_evolving_ids.size % args.epochs)]
+    test_evolving_ids = test_evolving_ids[:-(test_evolving_ids.size % args.epochs)]
+    
+    all_train_evolving_ids = np.split(train_evolving_ids, args.epochs if args.epochs > 0 else 1)
+    all_test_evolving_ids = np.split(test_evolving_ids, args.epochs if args.epochs > 0 else 1)
+    
+    # Create dictionaries to store points for each batch
+    batches = {
+        'train_init': [],
+        'test_init': [],
+        'train': {i: [] for i in range(args.epochs)},
+        'test': {i: [] for i in range(args.epochs)}
+    }
+    
+    # Single iteration over points to distribute them to appropriate batches
+    for point in points:
+        traj_id = point[0]
+        if traj_id in train_init_ids:
+            batches['train_init'].append(point)
+        elif traj_id in test_init_ids:
+            batches['test_init'].append(point)
+        else:
+            # Check evolving batches
+            for i in range(args.epochs):
+                if traj_id in all_train_evolving_ids[i]:
+                    batches['train'][i].append(point)
+                    break
+                if traj_id in all_test_evolving_ids[i]:
+                    batches['test'][i].append(point)
+                    break
+    
+    # Save all batches
+    np.save(f"../data/{args.dataset}/train_init", np.array(batches['train_init']))
+    np.save(f"../data/{args.dataset}/test_init", np.array(batches['test_init']))
+    
+    for i in range(args.epochs):
+        np.save(f"../data/{args.dataset}/train/{i}", np.array(batches['train'][i]))
+        np.save(f"../data/{args.dataset}/test/{i}", np.array(batches['test'][i]))
 
 
 def main(logger):
