@@ -63,7 +63,7 @@ def perturb_batch(batch_x, level, prob, selected_idx):
     for _, point in enumerate(batch_x):
         # point = [id, grid_num, [time]]
         if point[0] == traj_acc[0][0]:
-            # replaces the traj id with a dense index rather than sparse
+            # Replaces the traj id with a dense id. This is required because we need to later check for outliers using an index mask.
             traj_acc.append([i, point[1], point[2]])
             continue
         noisy_batch_x += create_anomaly(traj_acc, level, prob, selected_idx, i)
@@ -97,6 +97,9 @@ def create_anomaly(traj, level, prob, selected_idx, idx):
 
 
 def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=args.fraction):
+    unique_ids = np.unique(trajs[:, 0]) # sparse ids
+    traj_num = len(unique_ids)
+
     selected_idx = np.random.randint(0, traj_num, size=int(traj_num * ratio))
     new_trajs = perturb_batch(trajs, level, point_prob, selected_idx)
     return new_trajs, selected_idx
@@ -110,7 +113,7 @@ if __name__ == '__main__':
     logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
     with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
-        (lat_grid_num, lon_grid_num, traj_num) = tuple(json.load(f))
+        (lat_grid_num, lon_grid_num) = tuple(json.load(f))
 
     interval = 10
     if args.dataset == 'porto':

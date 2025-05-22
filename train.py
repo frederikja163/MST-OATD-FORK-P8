@@ -64,7 +64,7 @@ def main():
 
 if __name__ == "__main__":
     with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
-        (lat_grid_num, lon_grid_num, traj_num) = tuple(json.load(f))
+        (lat_grid_num, lon_grid_num) = tuple(json.load(f))
 
     time_interval = 10
     num_days = 60

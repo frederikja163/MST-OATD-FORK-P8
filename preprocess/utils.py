@@ -180,7 +180,7 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
 
     lat_size, lon_size, lat_grid_num, lon_grid_num = grid_size
     with open(f'../data/{args.dataset}/metadata.json', 'w') as f:
-        json.dump(list((lat_grid_num, lon_grid_num, traj_sum)), f)
+        json.dump(list((lat_grid_num, lon_grid_num)), f)
 
     logger.info(f'Merging {args.dataset} files')
     merge(files, "preprocessed_data")
