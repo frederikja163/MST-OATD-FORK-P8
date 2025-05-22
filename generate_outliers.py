@@ -104,7 +104,7 @@ def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=a
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    logger = get_logger(f"../logs/{args.dataset}.log")
+    logger = get_logger(f"logs/{args.dataset}.log")
     logger.info("=========================")
     logger.info(f"Dataset: {args.dataset}")
     logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
