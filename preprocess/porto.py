@@ -86,9 +86,9 @@ def main():
     np.save(f"../data/{args.dataset}/preprocessed_data.npy", np.array(preprocessed_trajectories, dtype=object))
 
     # Dataset statistics
-    logger.info(f"Total trajectory num: {traj_num}")
-    logger.info(f"Total point num: {point_num}")
-    logger.info(f"Invalid points: {invalid_points}")
+    logger.info(f"Total trajectory num: {traj_num:n}")
+    logger.info(f"Total point num: {point_num:n}")
+    logger.info(f"Invalid points: {invalid_points:n}")
 
     split_files_for_evolving(logger, f"../data/{args.dataset}/preprocessed_data.npy")
     logger.info('Finished!')

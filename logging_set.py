@@ -1,3 +1,4 @@
+import locale
 import logging
 import sys
 
@@ -20,5 +21,7 @@ def get_logger(filename, verbosity=1, name=None):
 
     sys.stdout = logger
     sys.stderr = logger
+
+    locale.setlocale(locale.LC_ALL, 'de_DE')
 
     return logger

@@ -13,6 +13,7 @@ from config import args
 from sklearn.model_selection import train_test_split
 from functools import partial
 from multiprocessing import Pool, Manager
+import locale
 
 # Determine whether a point is in boundary
 def in_boundary(lat, lng, b):
@@ -169,9 +170,9 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
 
     traj_sum = sum(traj_nums)
 
-    logger.info(f"Total valid trajectories: {traj_sum}")
-    logger.info(f"Total valid points: {sum(point_nums)}")
-    logger.info(f"Total invalid points: {sum(invalid_points)}")
+    logger.info(f"Total valid trajectories: {traj_sum:n}")
+    logger.info(f"Total valid points: {sum(point_nums):n}")
+    logger.info(f"Total invalid points: {sum(invalid_points):n}")
 
     lat_size, lon_size, lat_grid_num, lon_grid_num = grid_size
     with open(f'../data/{args.dataset}/metadata.json', 'w') as f:
@@ -202,6 +203,8 @@ def get_logger(filename, verbosity=1, name=None):
 
     sys.stdout = logger
     sys.stderr = logger
+
+    locale.setlocale(locale.LC_ALL, 'de_DE')
 
     return logger
 
