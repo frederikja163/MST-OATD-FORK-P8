@@ -14,13 +14,24 @@ from logging_set import get_logger
 from mst_oatd import MST_OATD
 from utils import auc_score, make_mask, make_len_mask
 
+from torch.nn.utils.rnn import pad_sequence
+
 
 def collate_fn(batch):
-    max_len = max(len(x) for x in batch)
-    seq_lengths = list(map(len, batch))
-    batch_trajs = [x + [[0, [0] * 6]] * (max_len - len(x)) for x in batch]
-    return torch.LongTensor(np.array(batch_trajs, dtype=object)[:, :, 0].tolist()), \
-        torch.Tensor(np.array(batch_trajs, dtype=object)[:, :, 1].tolist()), np.array(seq_lengths)
+    # batch is a list of trajectories, where each trajectory is a list of [id, grid, [timestamp]]
+    seq_lengths = np.array([len(traj) for traj in batch])
+    grid_seqs, timestamp_seqs = [], []
+
+    for sequence in batch:
+        grids, timestamp = zip(*[(row[1], row[2]) for row in sequence])
+        grid_seqs.append(torch.tensor(grids))
+        timestamp_seqs.append(torch.tensor(timestamp, dtype=torch.float))
+
+    # Pad sequences to the same length (batch-first)
+    padded_grids = pad_sequence(grid_seqs, batch_first=True)
+    padded_timestamps = pad_sequence(timestamp_seqs, batch_first=True)
+
+    return padded_grids, padded_timestamps, seq_lengths
 
 
 def seed_torch(seed):
@@ -33,16 +44,28 @@ def seed_torch(seed):
     torch.backends.cudnn.deterministic = True
 
 
-class MyDataset(Dataset):
-    def __init__(self, seqs):
-        self.seqs = seqs
+class TrajectoryDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
+        self.start_indices = self._compute_start_indices()
+
+    def _compute_start_indices(self):
+        start_indices = [0]
+        last_id = self.data[0][0]
+        for i in range(1, len(self.data)):
+            current_id = self.data[i][0]
+            if current_id != last_id:
+                start_indices.append(i)
+                last_id = current_id
+        return start_indices
 
     def __len__(self):
-        return len(self.seqs)
+        return len(self.start_indices)
 
-    def __getitem__(self, index):
-        data_seqs = self.seqs[index]
-        return data_seqs
+    def __getitem__(self, idx):
+        start_idx = self.start_indices[idx]
+        end_idx = self.start_indices[idx + 1] if idx + 1 < len(self.start_indices) else len(self.data)
+        return self.data[start_idx:end_idx]
 
 
 def time_convert(times, time_interval):
@@ -54,7 +77,7 @@ def savecheckpoint(state, file_name):
 
 
 class train_mst_oatd:
-    def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, args):
+    def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, time_interval, args):
 
         self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args).to(args.device)
         self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args).to(args.device)
@@ -89,17 +112,14 @@ class train_mst_oatd:
         self.train_loader = train_loader
         self.outliers_loader = outliers_loader
 
-        self.pretrained_path = 'models/pretrain_mstoatd_{}.pth'.format(args.dataset)
-        self.path_checkpoint = 'models/mstoatd_{}.pth'.format(args.dataset)
-        self.gmm_path = "models/gmm_{}.pt".format(args.dataset)
-        self.gmm_update_path = "models/gmm_update_{}.pt".format(args.dataset)
-        self.logger = get_logger("./logs/{}.log".format(args.dataset))
+        self.pretrained_path = f'models/pretrain_mstoatd_{args.dataset}.pth'
+        self.path_checkpoint = f'models/mstoatd_{args.dataset}.pth'
+        self.gmm_path = f"models/gmm_{args.dataset}.pt"
+        self.gmm_update_path = f"models/gmm_update_{args.dataset}.pt"
+        self.logger = get_logger(f"./logs/{args.dataset}.log")
 
         self.labels = labels
-        if args.dataset == 'cd':
-            self.time_interval = 10
-        else:
-            self.time_interval = 15
+        self.time_interval = time_interval
         self.mode = 'train'
 
         self.s1_size = args.s1_size
@@ -111,20 +131,31 @@ class train_mst_oatd:
         epo_loss = 0
 
         for batch in self.train_loader:
-            trajs, times, seq_lengths = batch
-            batch_size = len(trajs)
+            trajectories, timestamps, trajectory_lengths = batch
+            batch_size = len(trajectories)
 
-            mask = make_mask(make_len_mask(trajs)).to(self.device)
+            trajectories = trajectories.to(self.device)
+            timestamps = timestamps.to(self.device)
+
+            mask = make_mask(make_len_mask(trajectories)).to(self.device)
 
             self.pretrain_optimizer_s.zero_grad()
             self.pretrain_optimizer_t.zero_grad()
-            output_s, _, _, _ = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
-            output_t, _, _, _ = self.MST_OATD_T(trajs, times, seq_lengths, batch_size, "pretrain", -1)
 
-            times = time_convert(times, self.time_interval)
+            output_s, _, _, _ = self.MST_OATD_S(trajectories, timestamps, trajectory_lengths, batch_size, "pretrain",
+                                                -1)
+            output_t, _, _, _ = self.MST_OATD_T(trajectories, timestamps, trajectory_lengths, batch_size, "pretrain",
+                                                -1)
 
-            loss = self.crit(output_s[mask == 1], trajs.to(self.device)[mask == 1])
-            loss += self.crit(output_t[mask == 1], times.to(self.device)[mask == 1])
+            timestamps = time_convert(timestamps, self.time_interval)
+
+
+            loss = self.crit(output_s[mask == 1], trajectories[mask == 1].long())
+            loss += self.crit(output_t[mask == 1], timestamps[mask == 1].long())
+
+            # Add gradient clipping to prevent exploding gradients
+            torch.nn.utils.clip_grad_norm_(self.MST_OATD_S.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(self.MST_OATD_T.parameters(), max_norm=1.0)
 
             loss.backward()
 
@@ -135,9 +166,11 @@ class train_mst_oatd:
         self.lr_pretrain_s.step()
         self.lr_pretrain_t.step()
         epo_loss = "%.4f" % (epo_loss / len(self.train_loader))
-        self.logger.info("Epoch {} pretrain loss: {}".format(epoch + 1, epo_loss))
-        checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
-                      "model_state_dict_t": self.MST_OATD_T.state_dict()}
+        self.logger.info(f"Epoch {epoch + 1} pretrain loss: {epo_loss}")
+        checkpoint = {
+            "model_state_dict_s": self.MST_OATD_S.state_dict(),
+            "model_state_dict_t": self.MST_OATD_T.state_dict()
+        }
         torch.save(checkpoint, self.pretrained_path)
 
     def get_hidden(self):
@@ -244,7 +277,7 @@ class train_mst_oatd:
 
         if self.mode == "train":
             total_loss = "%.4f" % (total_loss / len(self.train_loader))
-            self.logger.info('Epoch {} loss: {}'.format(epoch + 1, total_loss))
+            self.logger.info(f'Epoch {epoch + 1} loss: {total_loss}')
             checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
                           "model_state_dict_t": self.MST_OATD_T.state_dict()}
             torch.save(checkpoint, self.path_checkpoint)
@@ -353,4 +386,4 @@ class train_mst_oatd:
         probs = gmm.predict_proba(z)
 
         for label in range(self.n_cluster):
-            np.save('probs/probs_{}_{}.npy'.format(label, self.dataset), np.sort(-probs[:, label]))
+            np.save(f'probs/probs_{label}_{self.dataset}.npy', np.sort(-probs[:, label]))
