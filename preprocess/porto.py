@@ -90,5 +90,5 @@ def main():
     logger.info(f"Total point num: {point_num}")
     logger.info(f"Invalid points: {invalid_points}")
 
-    split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
+    split_files_for_evolving(logger, f"../data/{args.dataset}/preprocessed_data.npy")
     logger.info('Finished!')
