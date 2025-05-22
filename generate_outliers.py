@@ -7,6 +7,8 @@ import numpy as np
 from config import args
 import json
 import os
+from logging_set import get_logger
+
 
 
 # Trajectory location offset
@@ -102,9 +104,10 @@ def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=a
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    print("=========================")
-    print(f"Dataset: {args.dataset}")
-    print(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
+    logger = get_logger(f"../logs/{args.dataset}.log")
+    logger.info("=========================")
+    logger.info(f"Dataset: {args.dataset}")
+    logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
     with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
         (lat_grid_num, lon_grid_num, traj_num) = tuple(json.load(f))
@@ -118,9 +121,12 @@ if __name__ == '__main__':
     outliers_trajs = np.array(outliers_trajs, dtype=object)
     outliers_idx = np.array(outliers_idx)
 
+    logger.info("Generating init outliers")
+
     np.save(f"./data/{args.dataset}/outliers_data_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
     np.save(f"./data/{args.dataset}/outliers_idx_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
 
+    logger.info("Generating evolving outliers")
 
     files = os.listdir(f"./data/{args.dataset}/test/")
     i=0
@@ -135,3 +141,5 @@ if __name__ == '__main__':
         np.save(
             f"./data/{args.dataset}/outliers_idx_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
         i+=1
+
+    logger.info("Done generating outliers data")

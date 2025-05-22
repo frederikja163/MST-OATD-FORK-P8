@@ -228,7 +228,6 @@ def main():
 
 
 
-    ##TODO: need to make case for tdrive too, can likely be based on chengdu given same preprocessing
     print('------------------------')
     results = "%.4f" % (sum(all_pr_auc) / len(all_pr_auc))
     print('Average PR_AUC:', results)

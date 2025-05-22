@@ -176,12 +176,12 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
     with open(f'../data/{args.dataset}/metadata.json', 'w') as f:
         json.dump(list((lat_grid_num, lon_grid_num, traj_sum)), f)
 
-    print(f'Merging {args.dataset} files')
+    logger.info(f'Merging {args.dataset} files')
     merge(files, "preprocessed_data")
-    print(f"Done merging, splitting into init and evolving")
+    logger.info(f"Done merging, splitting into init and evolving")
 
     split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
-    print('Finished!')
+    logger.info('Finished!')
 
 def get_logger(filename, verbosity=1, name=None):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
@@ -201,7 +201,7 @@ def get_logger(filename, verbosity=1, name=None):
 
     return logger
 
-def split_files_for_evolving(datafile):
+def split_files_for_evolving(logger, datafile):
     #load entire npy file which is passed
     points = np.load(datafile, allow_pickle=True)
 
@@ -210,13 +210,13 @@ def split_files_for_evolving(datafile):
 
     # Split trajectory IDs into init vs evolving
     init_ids, evolving_ids = np.split(unique_ids, [int(args.epoch_split * len(unique_ids))])
-    print(f"init size: {init_ids.size} evolving size: {evolving_ids.size}\n")
+    logger.info(f"init size: {init_ids.size} evolving size: {evolving_ids.size}\n")
 
     # 80% train, 20% test
     train_init_ids, test_init_ids = np.split(init_ids, [int(0.8 * len(init_ids))])
-    print(f"train_init size: {train_init_ids.size} test_init size: {test_init_ids.size}\n")
+    logger.info(f"train_init size: {train_init_ids.size} test_init size: {test_init_ids.size}\n")
     train_evolving_ids, test_evolving_ids = np.split(evolving_ids, [int(0.8 * len(evolving_ids))])
-    print(f"train_evolving size: {train_evolving_ids.size} test_evolving size: {test_evolving_ids.size}\n")
+    logger.info(f"train_evolving size: {train_evolving_ids.size} test_evolving size: {test_evolving_ids.size}\n")
 
     all_train_evolving_ids = np.split(train_evolving_ids[:-(train_evolving_ids.size%args.epochs)], args.epochs if args.epochs>0 else 1)
     all_test_evolving_ids =  np.split(test_evolving_ids[:-(test_evolving_ids.size%args.epochs)], args.epochs if args.epochs>0 else 1)
@@ -233,7 +233,7 @@ def split_files_for_evolving(datafile):
     np.save(f"../data/{args.dataset}/test_init", test_init)
 
 
-def main():
+def main(logger):
     traj_path = f"../datasets/{args.dataset}"
     min_lat = [float("inf")]
     max_lat = [-float("inf")]
@@ -251,7 +251,7 @@ def main():
     lon_maxima_min = []
     lon_maxima_max = []
     for path in path_list:
-        print(f"{x}/{a}")
+        logger.info(f"{x}/{a}")
         x = x+1
         try:
             data = pd.read_csv("{}/{}".format(traj_path, path), header=None)
@@ -282,7 +282,7 @@ def main():
     lat_maxima_max.reverse()
     lon_maxima_min.reverse()
     lon_maxima_max.reverse()
-    print(f"lat min: {min_lat}, {lat_maxima_min}")
-    print(f"lat max: {max_lat}, {lat_maxima_max}")
-    print(f"lon min: {min_lon}, {lon_maxima_min}")
-    print(f"lon max: {max_lon}, {lon_maxima_max}")
+    logger.info(f"lat min: {min_lat}, {lat_maxima_min}")
+    logger.info(f"lat max: {max_lat}, {lat_maxima_max}")
+    logger.info(f"lon min: {min_lon}, {lon_maxima_min}")
+    logger.info(f"lon max: {max_lon}, {lon_maxima_max}")
