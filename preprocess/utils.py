@@ -1,4 +1,5 @@
 import os
+import sys
 
 import networkx as nx
 import numpy as np
@@ -198,6 +199,9 @@ def get_logger(filename, verbosity=1, name=None):
     sh = logging.StreamHandler()
     sh.setFormatter(formatter)
     logger.addHandler(sh)
+
+    sys.stdout = logger
+    sys.stderr = logger
 
     return logger
 
