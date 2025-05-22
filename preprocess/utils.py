@@ -1,5 +1,4 @@
 import os
-import sys
 
 import networkx as nx
 import numpy as np
@@ -206,10 +205,7 @@ def get_logger(filename, verbosity=1, name=None):
     sh.setFormatter(formatter)
     logger.addHandler(sh)
 
-    locale.setlocale(locale.LC_ALL, 'de_DE')
-
-    sys.stdout = logger
-    sys.stderr = logger
+    locale.setlocale(locale.LC_ALL, 'en_US')
 
     return logger
 
