@@ -216,23 +216,33 @@ def get_logger(filename, verbosity=1, name=None):
 
 def split_files_for_evolving(datafile):
     #load entire npy file which is passed
-    trajectories = np.load(datafile, allow_pickle=True)
-    #split into init vs evolving
-    init, evolving = np.split(trajectories, [int(args.epoch_split*len(trajectories))])
-    print(f"init size: {init.size} evolving size: {evolving.size}\n")
-    #split init and evolving further
-    train_init, test_init = np.split(init, [int(0.8*len(init))])
-    print(f"train_init size: {train_init.size} test_init size: {test_init.size}\n")
-    train_evolving, test_evolving = np.split(evolving, [int(0.8*len(evolving))])
-    print(f"train_evolving size: {train_evolving.size} test_evolving size: {test_evolving.size}\n")
+    points = np.load(datafile, allow_pickle=True)
 
-    all_train_evolving = np.split(train_evolving[:-(train_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
-    all_test_evolving =  np.split(test_evolving[:-(test_evolving.size%args.epochs)], args.epochs if args.epochs>0 else 1)
+    # Get unique trajectory IDs
+    unique_ids = np.unique(points[:, 0])
+
+    # Split trajectory IDs into init vs evolving
+    init_ids, evolving_ids = np.split(unique_ids, [int(args.epoch_split * len(unique_ids))])
+    print(f"init size: {init_ids.size} evolving size: {evolving_ids.size}\n")
+
+    # 80% train, 20% test
+    train_init_ids, test_init_ids = np.split(init_ids, [int(0.8 * len(init_ids))])
+    print(f"train_init size: {train_init_ids.size} test_init size: {test_init_ids.size}\n")
+    train_evolving_ids, test_evolving_ids = np.split(evolving_ids, [int(0.8 * len(evolving_ids))])
+    print(f"train_evolving size: {train_evolving_ids.size} test_evolving size: {test_evolving_ids.size}\n")
+
+    all_train_evolving_ids = np.split(train_evolving_ids[:-(train_evolving_ids.size%args.epochs)], args.epochs if args.epochs>0 else 1)
+    all_test_evolving_ids =  np.split(test_evolving_ids[:-(test_evolving_ids.size%args.epochs)], args.epochs if args.epochs>0 else 1)
     #save as files
     for i in range (0, args.epochs):
-        np.save(f"../data/{args.dataset}/train/{i}", all_train_evolving[i])
-        np.save(f"../data/{args.dataset}/test/{i}", all_test_evolving[i])
+        train_evolving = points[np.isin(points[:, 0], all_train_evolving_ids[i])]
+        np.save(f"../data/{args.dataset}/train/{i}", train_evolving)
+        test_evolving = points[np.isin(points[:, 0], all_test_evolving_ids[i])]
+        np.save(f"../data/{args.dataset}/test/{i}", test_evolving)
+
+    train_init = points[np.isin(points[:, 0], train_init_ids)]
     np.save(f"../data/{args.dataset}/train_init", train_init)
+    test_init = points[np.isin(points[:, 0], train_init_ids)]
     np.save(f"../data/{args.dataset}/test_init", test_init)
 
 
