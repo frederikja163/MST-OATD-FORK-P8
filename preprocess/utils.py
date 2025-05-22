@@ -150,18 +150,6 @@ def merge(files, outfile):
     merged_trajectories = np.concatenate(trajectories, axis=0)
     np.save(f"../data/{args.dataset}/{outfile}", merged_trajectories)
 
-# merges 80% of the files into train_init.npy and 20% into test_init.npy
-def split_and_merge_files(files, logger):
-    train_files, test_files = train_test_split(files, test_size=0.2, random_state=42)
-    logger.debug('Merging train trajectories')
-    merge(test_files, "train_init")
-    logging.debug('Merging test trajectories')
-    merge(train_files, "test_init")
-
-    logging.info('Finished!')
-
-
-
 def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_gap, columns, grid_size):
     logger.info(f'Preprocessing {args.dataset}')
     files = os.listdir(f"../datasets/{args.dataset}")
@@ -190,11 +178,10 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
 
     print(f'Merging {args.dataset} files')
     merge(files, "preprocessed_data")
-    print('Finished!')
+    print(f"Done merging, splitting into init and evolving")
 
     split_files_for_evolving(f"../data/{args.dataset}/preprocessed_data.npy")
-
-    split_and_merge_files(files, logger)
+    print('Finished!')
 
 def get_logger(filename, verbosity=1, name=None):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}

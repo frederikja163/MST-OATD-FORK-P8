@@ -9,9 +9,11 @@ pip install -r requirements.txt
 - Step2: Put the Porto data file in <tt>../datasets/porto/</tt>, and unzip it as <tt>porto.csv</tt>. Put the unzipped Chengdu data in <tt>../datasets/chengdu/</tt>.
 - Step3: Run preprocessing by
 ```
-mkdir -p data/<dataset_name>
+mkdir -p data/<dataset_name>/train
+mkdir -p data/<dataset_name>/test
+
 cd preprocess
-python preprocess.py --dataset <dataset_name>
+python preprocess_data.py --dataset <dataset_name>
 cd ..
 mkdir logs models probs
 ```
