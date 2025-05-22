@@ -20,9 +20,11 @@ def in_boundary(lat, lng, b):
     return b['min_lon'] < lng < b['max_lon'] and b['min_lat'] < lat < b['max_lat']
 
 
-def ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date, invalid_count, traj_count):
+def ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date):
     # Unpack
     lat_size, lon_size, _, lon_grid_num = grid_size
+    invalid_point_count = 0
+    valid_traj_count = 0
 
     trajectories = []
     i = 0
@@ -36,16 +38,16 @@ def ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date
             trajectories.append([(point[0] << 6) + i, grid_i * lon_grid_num + grid_j, convert_date(point[3])])
         trajectory = trajectory[random_length:]
         i += 1
-    traj_count += i
+    valid_traj_count += i
     if len(trajectory) >= shortest:
         for point in trajectory:
             grid_i = int((point[1] - boundary['min_lat']) / lat_size)
             grid_j = int((point[2] - boundary['min_lon']) / lon_size)
             trajectories.append([(point[0] << 6) + i, grid_i * lon_grid_num + grid_j, convert_date(point[3])])
-        traj_count += 1
+        valid_traj_count += 1
     else:
-        invalid_count += len(trajectory)
-    return trajectories, invalid_count
+        invalid_point_count += len(trajectory)
+    return trajectories, invalid_point_count, valid_traj_count
 
 
 # grid map based lat, lon boundaries and a grid_size in km
@@ -111,9 +113,10 @@ def preprocess(file, shortest, longest, boundary, convert_date,
                 pre_point = point
             else:
                 if valid:
-                    (trajs, traj_count) = ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date,
-                                                      invalid_count, traj_count)
+                    (trajs, invalid_point_count, valid_traj_count) = ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date)
                     preprocessed_points += trajs
+                    invalid_count += invalid_point_count
+                    traj_count += valid_traj_count
                 else:
                     invalid_count += len(trajectory)
                 trajectory = []
@@ -121,8 +124,10 @@ def preprocess(file, shortest, longest, boundary, convert_date,
                 pre_point = None
 
     if valid:
-        (trajs, traj_count) = ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date, invalid_count, traj_count)
+        (trajs, invalid_point_count, valid_traj_count) = ensure_size(trajectory, longest, shortest, grid_size, boundary, convert_date)
         preprocessed_points += trajs
+        invalid_count += invalid_point_count
+        traj_count += valid_traj_count
     else:
         invalid_count += len(trajectory)
 
@@ -256,7 +261,7 @@ def split_files_for_evolving(logger, datafile):
     # Save all batches
     np.save(f"../data/{args.dataset}/train_init", np.array(batches['train_init']))
     np.save(f"../data/{args.dataset}/test_init", np.array(batches['test_init']))
-    
+
     for i in range(args.epochs):
         np.save(f"../data/{args.dataset}/train/{i}", np.array(batches['train'][i]))
         np.save(f"../data/{args.dataset}/test/{i}", np.array(batches['test'][i]))
