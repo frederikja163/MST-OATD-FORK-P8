@@ -77,7 +77,7 @@ def savecheckpoint(state, file_name):
 
 
 class train_mst_oatd:
-    def __init__(self, s_token_size, t_token_size, labels, train_loader, outliers_loader, time_interval, args):
+    def __init__(self, s_token_size, t_token_size, time_interval, args):
 
         self.MST_OATD_S = MST_OATD(s_token_size, s_token_size, args).to(args.device)
         self.MST_OATD_T = MST_OATD(s_token_size, t_token_size, args).to(args.device)
@@ -109,28 +109,24 @@ class train_mst_oatd:
         self.lr_pretrain_s = StepLR(self.pretrain_optimizer_s, step_size=2, gamma=0.9)
         self.lr_pretrain_t = StepLR(self.pretrain_optimizer_t, step_size=2, gamma=0.9)
 
-        self.train_loader = train_loader
-        self.outliers_loader = outliers_loader
-
         self.pretrained_path = f'models/pretrain_mstoatd_{args.dataset}.pth'
         self.path_checkpoint = f'models/mstoatd_{args.dataset}.pth'
         self.gmm_path = f"models/gmm_{args.dataset}.pt"
         self.gmm_update_path = f"models/gmm_update_{args.dataset}.pt"
         self.logger = get_logger(f"./logs/{args.dataset}.log")
 
-        self.labels = labels
         self.time_interval = time_interval
         self.mode = 'train'
 
         self.s1_size = args.s1_size
         self.s2_size = args.s2_size
 
-    def pretrain(self, epoch):
+    def pretrain(self, train_loader, epoch):
         self.MST_OATD_S.train()
         self.MST_OATD_T.train()
         epo_loss = 0
 
-        for batch in self.train_loader:
+        for batch in train_loader:
             trajectories, timestamps, trajectory_lengths = batch
             batch_size = len(trajectories)
 
@@ -165,7 +161,7 @@ class train_mst_oatd:
 
         self.lr_pretrain_s.step()
         self.lr_pretrain_t.step()
-        epo_loss = "%.4f" % (epo_loss / len(self.train_loader))
+        epo_loss = "%.4f" % (epo_loss / len(train_loader))
         self.logger.info(f"Epoch {epoch + 1} pretrain loss: {epo_loss}")
         checkpoint = {
             "model_state_dict_s": self.MST_OATD_S.state_dict(),
@@ -187,7 +183,7 @@ class train_mst_oatd:
             z = torch.cat(z, dim=0)
         return z
 
-    def train_gmm(self):
+    def train_gmm(self, train_loader):
         self.MST_OATD_S.eval()
         self.MST_OATD_T.eval()
         checkpoint = torch.load(self.pretrained_path, weights_only=False)
@@ -197,7 +193,7 @@ class train_mst_oatd:
         with torch.no_grad():
             z_s = []
             z_t = []
-            for batch in self.train_loader:
+            for batch in train_loader:
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
                 _, _, _, hidden_s = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
@@ -249,11 +245,11 @@ class train_mst_oatd:
                         "gmm_update_covariances": self.gmm.covariances_,
                         "gmm_update_precisions_cholesky": self.gmm.precisions_cholesky_}, self.gmm_update_path)
 
-    def train(self, epoch):
+    def train(self, train_loader, epoch):
         self.MST_OATD_S.train()
         self.MST_OATD_T.train()
         total_loss = 0
-        for batch in self.train_loader:
+        for batch in train_loader:
             trajs, times, seq_lengths = batch
             batch_size = len(trajs)
 
@@ -276,13 +272,13 @@ class train_mst_oatd:
             total_loss += loss.item()
 
         if self.mode == "train":
-            total_loss = "%.4f" % (total_loss / len(self.train_loader))
+            total_loss = "%.4f" % (total_loss / len(train_loader))
             self.logger.info(f'Epoch {epoch + 1} loss: {total_loss}')
             checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
                           "model_state_dict_t": self.MST_OATD_T.state_dict()}
             torch.save(checkpoint, self.path_checkpoint)
 
-    def detection(self):
+    def detection(self, outliers_loader, labels):
 
         self.MST_OATD_S.eval()
         all_likelihood_s = []
@@ -291,7 +287,7 @@ class train_mst_oatd:
 
         with torch.no_grad():
 
-            for batch in self.outliers_loader:
+            for batch in outliers_loader:
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
                 mask = make_mask(make_len_mask(trajs)).to(self.device)
@@ -322,7 +318,7 @@ class train_mst_oatd:
         likelihood_s = torch.cat(all_likelihood_s, dim=0)
         likelihood_t = torch.cat(all_likelihood_t, dim=0)
 
-        pr_auc = auc_score(self.labels, (1 - likelihood_s * likelihood_t).cpu().detach().numpy())
+        pr_auc = auc_score(labels, (1 - likelihood_s * likelihood_t).cpu().detach().numpy())
         return pr_auc
 
     def gaussian_pdf_log(self, x, mu, log_var):
