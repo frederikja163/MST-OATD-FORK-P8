@@ -45,16 +45,15 @@ def main():
             MST_OATD.train(epoch)
 
     if args.task == 'test':
-
-        MST_OATD.logger.info('Start testing!')
-        MST_OATD.logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
+        MST_OATD.logger.info(f"Start testing with: d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
         checkpoint = torch.load(MST_OATD.path_checkpoint, weights_only=False)
         MST_OATD.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         MST_OATD.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
         pr_auc = MST_OATD.detection()
         pr_auc = "%.4f" % pr_auc
-        MST_OATD.logger.info("PR_AUC: {}".format(pr_auc))
+
+        MST_OATD.logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio} produces PR_AUC: {pr_auc}")
 
     if args.task == 'train':
         MST_OATD.train_gmm_update()
