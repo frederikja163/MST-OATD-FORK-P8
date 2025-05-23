@@ -7,16 +7,15 @@ from sklearn.mixture import GaussianMixture
 from torch.utils.data import DataLoader
 
 from config import args
-from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
+from mst_oatd_trainer import train_mst_oatd, TrajectoryDataset, seed_torch, collate_fn
 from train_labels import Linear_Model
 
 
 def get_z(trajs):
-    data = MyDataset(trajs)
+    data = TrajectoryDataset(trajs)
     loader = DataLoader(dataset=data, batch_size=args.batch_size, shuffle=False,
                         collate_fn=collate_fn, num_workers=4)
-    MST_OATD_U.train_loader = loader
-    return MST_OATD_U.get_hidden().cpu()
+    return MST_OATD_U.get_hidden(loader).cpu()
 
 
 def load_gmm():

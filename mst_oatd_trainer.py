@@ -169,13 +169,13 @@ class train_mst_oatd:
         }
         torch.save(checkpoint, self.pretrained_path)
 
-    def get_hidden(self):
+    def get_hidden(self, train_loader):
         checkpoint = torch.load(self.path_checkpoint, weights_only=False)
         self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         self.MST_OATD_S.eval()
         with torch.no_grad():
             z = []
-            for batch in self.train_loader:
+            for batch in train_loader:
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
                 _, _, _, hidden = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)
@@ -220,7 +220,7 @@ class train_mst_oatd:
                         "gmm_t_pi_prior": self.gmm_t.weights_,
                         "gmms_t_logvar_prior": self.gmm_t.covariances_}, self.gmm_path)
 
-    def train_gmm_update(self):
+    def train_gmm_update(self, train_loader):
 
         checkpoint = torch.load(self.path_checkpoint, weights_only=False)
         self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
@@ -228,7 +228,7 @@ class train_mst_oatd:
 
         with torch.no_grad():
             z = []
-            for batch in self.train_loader:
+            for batch in train_loader:
                 trajs, times, seq_lengths = batch
                 batch_size = len(trajs)
                 _, _, _, hidden = self.MST_OATD_S(trajs, times, seq_lengths, batch_size, "pretrain", -1)

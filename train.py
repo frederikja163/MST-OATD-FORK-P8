@@ -10,6 +10,7 @@ from mst_oatd_trainer import train_mst_oatd, collate_fn, TrajectoryDataset
 
 def main():
     MST_OATD = train_mst_oatd(s_token_size, t_token_size, time_interval, args)
+    train_loader = None
 
     if args.task == 'train':
 
@@ -60,8 +61,8 @@ def main():
         MST_OATD.logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio} produces PR_AUC: {pr_auc}")
 
     if args.task == 'train':
-        MST_OATD.train_gmm_update()
-        z = MST_OATD.get_hidden()
+        MST_OATD.train_gmm_update(train_loader)
+        z = MST_OATD.get_hidden(train_loader)
         MST_OATD.get_prob(z.cpu())
 
 
