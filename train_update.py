@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -72,22 +73,19 @@ def update_data(origin_trajs, train_trajs, cats_sample):
 
 
 def train_update(train_trajs, test_trajs, labels, i):
-    train_data = MyDataset(train_trajs)
-    test_data = MyDataset(test_trajs)
+    train_data = TrajectoryDataset(train_trajs)
 
     train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True,
                               collate_fn=collate_fn, num_workers=8)
+
+    test_data = TrajectoryDataset(test_trajs)
     outliers_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False,
                                  collate_fn=collate_fn, num_workers=8)
 
-    MST_OATD.train_loader = train_loader
-    MST_OATD.outliers_loader = outliers_loader
-    MST_OATD.labels = labels
-
     pr_auc = []
     for epoch in range(args.epochs):
-        MST_OATD.train(epoch)
-        results = MST_OATD.detection()
+        MST_OATD.train(train_loader, epoch)
+        results = MST_OATD.detection(outliers_loader, labels)
         pr_auc.append(results)
     results = "%.4f" % max(pr_auc)
     print("File {} PR_AUC:".format(i), results)
@@ -95,14 +93,11 @@ def train_update(train_trajs, test_trajs, labels, i):
 
 
 def test_update(test_trajs, labels, i):
-    test_data = MyDataset(test_trajs)
+    test_data = TrajectoryDataset(test_trajs)
     outliers_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False,
                                  collate_fn=collate_fn, num_workers=8)
 
-    MST_OATD_U.outliers_loader = outliers_loader
-    MST_OATD_U.labels = labels
-
-    pr_auc = MST_OATD_U.detection()
+    pr_auc = MST_OATD_U.detection(outliers_loader, labels)
     results = "%.4f" % pr_auc
     print("File {} PR_AUC:".format(i), results)
     return pr_auc
@@ -239,12 +234,25 @@ if __name__ == "__main__":
     print("Dataset:", args.dataset)
     print("Mode:", args.update_mode)
 
+    with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
+        (lat_grid_num, lon_grid_num) = tuple(json.load(f))
+
+    time_interval = 10
+    num_days = 60
+
     if args.dataset == 'porto':
-        s_token_size = 51 * 119
-        t_token_size = 5760
+        time_interval = 15
+        num_days = 60
     elif args.dataset == 'cd':
-        s_token_size = 167 * 154
-        t_token_size = 8640
+        time_interval = 10
+        num_days = 60
+    elif args.dataset == 'tdrive':
+        time_interval = 600
+        num_days = 10
+
+    s_token_size = lat_grid_num * lon_grid_num
+    seconds_a_day = 24 * 60 * 60
+    t_token_size = (seconds_a_day // time_interval) * num_days
 
     gmm = load_gmm()
 
