@@ -130,28 +130,18 @@ class train_mst_oatd:
             trajectories, timestamps, trajectory_lengths = batch
             batch_size = len(trajectories)
 
-            trajectories = trajectories.to(self.device)
-            timestamps = timestamps.to(self.device)
-
             mask = make_mask(make_len_mask(trajectories)).to(self.device)
 
             self.pretrain_optimizer_s.zero_grad()
             self.pretrain_optimizer_t.zero_grad()
 
-            output_s, _, _, _ = self.MST_OATD_S(trajectories, timestamps, trajectory_lengths, batch_size, "pretrain",
-                                                -1)
-            output_t, _, _, _ = self.MST_OATD_T(trajectories, timestamps, trajectory_lengths, batch_size, "pretrain",
-                                                -1)
+            output_s, _, _, _ = self.MST_OATD_S(trajectories, timestamps, trajectory_lengths, batch_size, "pretrain", -1)
+            output_t, _, _, _ = self.MST_OATD_T(trajectories, timestamps, trajectory_lengths, batch_size, "pretrain", -1)
 
             timestamps = time_convert(timestamps, self.time_interval)
 
-
-            loss = self.crit(output_s[mask == 1], trajectories[mask == 1].long())
-            loss += self.crit(output_t[mask == 1], timestamps[mask == 1].long())
-
-            # Add gradient clipping to prevent exploding gradients
-            torch.nn.utils.clip_grad_norm_(self.MST_OATD_S.parameters(), max_norm=1.0)
-            torch.nn.utils.clip_grad_norm_(self.MST_OATD_T.parameters(), max_norm=1.0)
+            loss = self.crit(output_s[mask == 1], trajectories.to(self.device)[mask == 1])
+            loss += self.crit(output_t[mask == 1], timestamps.to(self.device)[mask == 1])
 
             loss.backward()
 

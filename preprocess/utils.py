@@ -172,9 +172,7 @@ def multiprocess(logger, shortest, longest, boundary, convert_date, timestamp_ga
     pool.close()
     pool.join()
 
-    traj_sum = sum(traj_nums)
-
-    logger.info(f"Total valid trajectories: {traj_sum:n}")
+    logger.info(f"Total valid trajectories: {sum(traj_nums):n}")
     logger.info(f"Total valid points: {sum(point_nums):n}")
     logger.info(f"Total invalid points: {sum(invalid_points):n}")
 
