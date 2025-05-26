@@ -32,6 +32,8 @@ parser.add_argument("--s2_size", type=int, default=4) # Default 4
 
 parser.add_argument("--task", type=str, default='train') # Default train
 
+parser.add_argument("--checkpoint_idx", type=int, default=0)
+
 args = parser.parse_args()
 
 # python train.py --dataset porto --batch_size 1600 --pretrain_epochs 6

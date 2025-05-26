@@ -1,0 +1,100 @@
+Results Log
+===========
+Timestamp, Batch Size, Embedding Size, Hidden Size, N Cluster, Pretrain LR S, Pretrain LR T, LR S, LR T, Epochs, Pretrain Epochs, Ratio, Distance, Fraction, Observed Ratio, Device, Dataset, Update Mode, Train Num, S1 Size, S2 Size, Task, AUC, Precision, Recall, F1, Accuracy
+====================================================================================================
+Timestamp: 2025-05-22 07:47:44.469351
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 6.84e-05
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 1.0
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 2
+
+PR_AUC: 0.9060
+ROC_AUC: 0.9950
+F1: 0.8557
+PRECISION: 0.8008
+RECALL: 0.9188
+ACCURACY: 0.9848
+THRESHOLD: 0.9596
+---------------------------------------------
+Timestamp: 2025-05-22 07:48:33.178292
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 5.85e-05
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 1.0
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 1
+
+PR_AUC: 0.9081
+ROC_AUC: 0.9948
+F1: 0.8496
+PRECISION: 0.8849
+RECALL: 0.8170
+ACCURACY: 0.9858
+THRESHOLD: 0.9697
+---------------------------------------------
+Timestamp: 2025-05-22 07:49:59.729219
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0002
+lr_t: 4.68e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 1.0
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 19
+
+PR_AUC: 0.8972
+ROC_AUC: 0.9948
+F1: 0.8530
+PRECISION: 0.8015
+RECALL: 0.9116
+ACCURACY: 0.9846
+THRESHOLD: 0.9495
+---------------------------------------------

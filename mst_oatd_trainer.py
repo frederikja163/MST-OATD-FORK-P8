@@ -89,11 +89,11 @@ class train_mst_oatd:
         self.train_loader = train_loader
         self.outliers_loader = outliers_loader
 
-        self.pretrained_path = 'models/pretrain_mstoatd_{}.pth'.format(args.dataset)
-        self.path_checkpoint = 'models/mstoatd_{}.pth'.format(args.dataset)
-        self.gmm_path = "models/gmm_{}.pt".format(args.dataset)
-        self.gmm_update_path = "models/gmm_update_{}.pt".format(args.dataset)
-        self.logger = get_logger("./logs/{}.log".format(args.dataset))
+        self.pretrained_path = f"models/pretrain_mstoatd_{args.dataset}_{args.checkpoint_idx}.pth"
+        self.path_checkpoint = f"models/mstoatd_{args.dataset}_{args.checkpoint_idx}.pth"
+        self.gmm_path = f"models/gmm_{args.dataset}_{args.checkpoint_idx}.pt"
+        self.gmm_update_path = f"models/gmm_update_{args.dataset}_{args.checkpoint_idx}.pt"
+        self.logger = get_logger(f"./logs/{args.dataset}_{args.checkpoint_idx}.log")
 
         self.labels = labels
         if args.dataset == 'cd':
@@ -138,10 +138,10 @@ class train_mst_oatd:
         self.logger.info("Epoch {} pretrain loss: {}".format(epoch + 1, epo_loss))
         checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
                       "model_state_dict_t": self.MST_OATD_T.state_dict()}
-        torch.save(checkpoint, self.pretrained_path)
+        torch.save(checkpoint, f"{self.pretrained_path}")
 
     def get_hidden(self):
-        checkpoint = torch.load(self.path_checkpoint, weights_only=False)
+        checkpoint = torch.load(f"{self.path_checkpoint}", weights_only=False)
         self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         self.MST_OATD_S.eval()
         with torch.no_grad():
@@ -157,7 +157,7 @@ class train_mst_oatd:
     def train_gmm(self):
         self.MST_OATD_S.eval()
         self.MST_OATD_T.eval()
-        checkpoint = torch.load(self.pretrained_path, weights_only=False)
+        checkpoint = torch.load(f"{self.pretrained_path}", weights_only=False)
         self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         self.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
 
@@ -189,11 +189,11 @@ class train_mst_oatd:
                         "gmm_s_logvar_prior": self.gmm_s.covariances_,
                         "gmm_t_mu_prior": self.gmm_t.means_,
                         "gmm_t_pi_prior": self.gmm_t.weights_,
-                        "gmms_t_logvar_prior": self.gmm_t.covariances_}, self.gmm_path)
+                        "gmms_t_logvar_prior": self.gmm_t.covariances_}, f"{self.gmm_path}")
 
     def train_gmm_update(self):
 
-        checkpoint = torch.load(self.path_checkpoint, weights_only=False)
+        checkpoint = torch.load(f"{self.path_checkpoint}", weights_only=False)
         self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         self.MST_OATD_S.eval()
 
@@ -214,7 +214,7 @@ class train_mst_oatd:
         savecheckpoint({"gmm_update_weights": self.gmm.weights_,
                         "gmm_update_means": self.gmm.means_,
                         "gmm_update_covariances": self.gmm.covariances_,
-                        "gmm_update_precisions_cholesky": self.gmm.precisions_cholesky_}, self.gmm_update_path)
+                        "gmm_update_precisions_cholesky": self.gmm.precisions_cholesky_}, f"{self.gmm_update_path}")
 
     def train(self, epoch):
         self.MST_OATD_S.train()
@@ -247,7 +247,7 @@ class train_mst_oatd:
             self.logger.info('Epoch {} loss: {}'.format(epoch + 1, total_loss))
             checkpoint = {"model_state_dict_s": self.MST_OATD_S.state_dict(),
                           "model_state_dict_t": self.MST_OATD_T.state_dict()}
-            torch.save(checkpoint, self.path_checkpoint)
+            torch.save(checkpoint, f"{self.path_checkpoint}")
 
     def detection(self):
 
@@ -290,7 +290,9 @@ class train_mst_oatd:
         likelihood_s = torch.cat(all_likelihood_s, dim=0)
         likelihood_t = torch.cat(all_likelihood_t, dim=0)
         anomaly_score = (1 - likelihood_s * likelihood_t).cpu().detach().numpy()
-
+        threshold = anomaly_score.sum()/len(anomaly_score)
+        print(f"threshold: {threshold}")
+        
         # True labels
         y_true = self.labels
 
@@ -358,11 +360,11 @@ class train_mst_oatd:
         return loss
 
     def load_mst_oatd(self):
-        checkpoint = torch.load(self.pretrained_path, weights_only=False)
+        checkpoint = torch.load(f"{self.pretrained_path}", weights_only=False)
         self.MST_OATD_S.load_state_dict(checkpoint['model_state_dict_s'])
         self.MST_OATD_T.load_state_dict(checkpoint['model_state_dict_t'])
 
-        gmm_params = torch.load(self.gmm_path, weights_only=False)
+        gmm_params = torch.load(f"{self.gmm_path}", weights_only=False)
 
         self.MST_OATD_S.pi_prior.data = torch.from_numpy(gmm_params['gmm_s_pi_prior']).to(self.device)
         self.MST_OATD_S.mu_prior.data = torch.from_numpy(gmm_params['gmm_s_mu_prior']).to(self.device)
@@ -374,7 +376,7 @@ class train_mst_oatd:
 
     def get_prob(self, z):
         gmm = GaussianMixture(n_components=self.n_cluster, covariance_type='diag')
-        gmm_params = torch.load(self.gmm_update_path, weights_only=False)
+        gmm_params = torch.load(f"{self.gmm_update_path}", weights_only=False)
         gmm.precisions_cholesky_ = gmm_params['gmm_update_precisions_cholesky']
         gmm.weights_ = gmm_params['gmm_update_weights']
         gmm.means_ = gmm_params['gmm_update_means']

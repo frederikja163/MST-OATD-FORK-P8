@@ -1,0 +1,324 @@
+Results Log
+===========
+Timestamp, Batch Size, Embedding Size, Hidden Size, N Cluster, Pretrain LR S, Pretrain LR T, LR S, LR T, Epochs, Pretrain Epochs, Ratio, Distance, Fraction, Observed Ratio, Device, Dataset, Update Mode, Train Num, S1 Size, S2 Size, Task, AUC, Precision, Recall, F1, Accuracy
+====================================================================================================
+Timestamp: 2025-05-14 14:19:08.997382
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001278
+lr_t: 4.68e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 16
+
+PR_AUC: 0.4678
+ROC_AUC: 0.7802
+F1: 0.5386
+PRECISION: 0.6347
+RECALL: 0.4677
+ACCURACY: 0.9608
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 14:40:30.569202
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 6.84e-05
+lr_t: 7.46e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 42
+
+PR_AUC: 0.5187
+ROC_AUC: 0.7819
+F1: 0.5608
+PRECISION: 0.7117
+RECALL: 0.4627
+ACCURACY: 0.9645
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 14:43:37.939991
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 5.85e-05
+lr_t: 8.7e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 51
+
+PR_AUC: 0.5366
+ROC_AUC: 0.7819
+F1: 0.5783
+PRECISION: 0.7558
+RECALL: 0.4683
+ACCURACY: 0.9666
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 14:44:45.516411
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001746
+lr_t: 7.46e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 48
+
+PR_AUC: 0.5381
+ROC_AUC: 0.7829
+F1: 0.5815
+PRECISION: 0.8198
+RECALL: 0.4505
+ACCURACY: 0.9682
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 15:08:38.683235
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0002
+lr_t: 0.0001015
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 69
+
+PR_AUC: 0.5373
+ROC_AUC: 0.7807
+F1: 0.5817
+PRECISION: 0.8477
+RECALL: 0.4427
+ACCURACY: 0.9688
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 15:08:39.611585
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 5e-05
+lr_t: 0.0001183
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 70
+
+PR_AUC: 0.5158
+ROC_AUC: 0.7775
+F1: 0.5614
+PRECISION: 0.7257
+RECALL: 0.4577
+ACCURACY: 0.9650
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 15:08:41.052284
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 5.85e-05
+lr_t: 0.0001183
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 71
+
+PR_AUC: 0.5363
+ROC_AUC: 0.7805
+F1: 0.5790
+PRECISION: 0.8064
+RECALL: 0.4516
+ACCURACY: 0.9678
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 15:08:53.519087
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 5e-05
+lr_t: 0.00016
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 90
+
+PR_AUC: 0.5385
+ROC_AUC: 0.7805
+F1: 0.5832
+PRECISION: 0.7744
+RECALL: 0.4677
+ACCURACY: 0.9673
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 15:10:53.124201
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001093
+lr_t: 0.00016
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 95
+
+PR_AUC: 0.5456
+ROC_AUC: 0.7846
+F1: 0.5883
+PRECISION: 0.7816
+RECALL: 0.4716
+ACCURACY: 0.9677
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-14 15:12:14.150793
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001746
+lr_t: 0.00016
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 98
+
+PR_AUC: 0.5094
+ROC_AUC: 0.7799
+F1: 0.5588
+PRECISION: 0.7463
+RECALL: 0.4466
+ACCURACY: 0.9655
+THRESHOLD: 0.9798
+---------------------------------------------

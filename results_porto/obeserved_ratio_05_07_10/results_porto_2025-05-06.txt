@@ -1,0 +1,159 @@
+Results Log
+===========
+Timestamp, Batch Size, Embedding Size, Hidden Size, N Cluster, Pretrain LR S, Pretrain LR T, LR S, LR T, Epochs, Pretrain Epochs, Ratio, Distance, Fraction, Observed Ratio, Device, Dataset, Update Mode, Train Num, S1 Size, S2 Size, Task, AUC, Precision, Recall, F1, Accuracy
+====================================================================================================
+Timestamp: 2025-05-06 11:29:26.086835
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 1
+s2_size: 2
+task: test
+
+PR_AUC: 0.4108
+ROC_AUC: 0.7787
+F1: 0.4880
+PRECISION: 0.5063
+RECALL: 0.4711
+ACCURACY: 0.9516
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-06 11:58:18.494173
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.7
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 1
+s2_size: 2
+task: test
+
+PR_AUC: 0.7665
+ROC_AUC: 0.9173
+F1: 0.7605
+PRECISION: 0.8586
+RECALL: 0.6824
+ACCURACY: 0.9789
+THRESHOLD: 0.9697
+---------------------------------------------
+Timestamp: 2025-05-06 12:31:08.708247
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 1.0
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 1
+s2_size: 2
+task: test
+
+PR_AUC: 0.9047
+ROC_AUC: 0.9946
+F1: 0.8568
+PRECISION: 0.8069
+RECALL: 0.9132
+ACCURACY: 0.9850
+THRESHOLD: 0.9596
+---------------------------------------------
+Timestamp: 2025-05-06 13:11:25.490594
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 1
+s2_size: 4
+task: test
+
+PR_AUC: 0.4443
+ROC_AUC: 0.7794
+F1: 0.5394
+PRECISION: 0.6509
+RECALL: 0.4605
+ACCURACY: 0.9615
+THRESHOLD: 0.9798
+---------------------------------------------
+Timestamp: 2025-05-06 22:05:01.245367
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001
+lr_t: 4e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.7
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 1
+s2_size: 4
+task: test
+
+PR_AUC: 0.7714
+ROC_AUC: 0.9180
+F1: 0.7638
+PRECISION: 0.8095
+RECALL: 0.7230
+ACCURACY: 0.9781
+THRESHOLD: 0.9596
+---------------------------------------------

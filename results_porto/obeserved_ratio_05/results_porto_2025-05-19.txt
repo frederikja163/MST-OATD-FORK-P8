@@ -1,0 +1,36 @@
+Results Log
+===========
+Timestamp, Batch Size, Embedding Size, Hidden Size, N Cluster, Pretrain LR S, Pretrain LR T, LR S, LR T, Epochs, Pretrain Epochs, Ratio, Distance, Fraction, Observed Ratio, Device, Dataset, Update Mode, Train Num, S1 Size, S2 Size, Task, AUC, Precision, Recall, F1, Accuracy
+====================================================================================================
+Timestamp: 2025-05-19 08:30:05.349151
+batch_size: 800
+embedding_size: 128
+hidden_size: 512
+n_cluster: 10
+pretrain_lr_s: 0.002
+pretrain_lr_t: 0.002
+lr_s: 0.0001278
+lr_t: 8.7e-05
+epochs: 5
+pretrain_epochs: 6
+ratio: 0.05
+distance: 2
+fraction: 0.2
+obeserved_ratio: 0.5
+device: cuda
+dataset: porto
+update_mode: pretrain
+train_num: 80000
+s1_size: 3
+s2_size: 2
+task: test
+checkpoint_idx: 56
+
+PR_AUC: 0.5375
+ROC_AUC: 0.7834
+F1: 0.5759
+PRECISION: 0.8126
+RECALL: 0.4461
+ACCURACY: 0.9678
+THRESHOLD: 0.9798
+---------------------------------------------
