@@ -1,17 +1,20 @@
 import datetime
 import math
-import os
 from datetime import timedelta
 
 import numpy as np
 
 from config import args
+import json
+import os
+from logging_set import get_logger
+
 
 
 # Trajectory location offset
 def perturb_point(point, level, offset=None):
-    point, times = point[0], point[1]
-    x, y = int(point // map_size[1]), int(point % map_size[1])
+    point_id, grid_loc, timestamp = point
+    x, y = convert(grid_loc)
 
     if offset is None:
         offset = [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, -1], [-1, 1], [1, -1]]
@@ -20,15 +23,14 @@ def perturb_point(point, level, offset=None):
     else:
         x_offset, y_offset = offset
 
-    if 0 <= x + x_offset * level < map_size[0] and 0 <= y + y_offset * level < map_size[1]:
+    if 0 <= x + x_offset * level < lat_grid_num and 0 <= y + y_offset * level < lon_grid_num:
         x += x_offset * level
         y += y_offset * level
+    return [point_id, int(x * lon_grid_num + y), timestamp]
 
-    return [int(x * map_size[1] + y), times]
 
-
-def convert(point):
-    x, y = int(point // map_size[1]), int(point % map_size[1])
+def convert(grid_loc):
+    x, y = int(grid_loc // lon_grid_num), int(grid_loc % lon_grid_num)
     return [x, y]
 
 
@@ -45,48 +47,62 @@ def time_calcuate(vec, s):
 # Trajectory time offset
 def perturb_time(traj, st_loc, end_loc, time_offset, interval):
     for i in range(st_loc, end_loc):
-        traj[i][1] = time_calcuate(traj[i][1], int((i - st_loc + 1) * time_offset * interval))
+        traj[i][2] = time_calcuate(traj[i][2], int((i - st_loc + 1) * time_offset * interval))
 
     for i in range(end_loc, len(traj)):
-        traj[i][1] = time_calcuate(traj[i][1], int((end_loc - st_loc) * time_offset * interval))
+        traj[i][2] = time_calcuate(traj[i][2], int((end_loc - st_loc) * time_offset * interval))
     return traj
 
 
 def perturb_batch(batch_x, level, prob, selected_idx):
     noisy_batch_x = []
+    iterator = enumerate(batch_x)
+    i = 0
+    first_point = next(iterator)[1]
+    current_id = first_point[0]
+    traj_acc = [[i, first_point[1], first_point[2]]]
 
-    if args.dataset == 'porto':
-        interval = 15
-    else:
-        interval = 10
+    for _, point in enumerate(batch_x):
+        # point = [id, grid_num, [time]]
+        if point[0] == current_id:
+            # Replaces the traj id with a dense id. This is required because we need to later check for outliers using an index mask.
+            traj_acc.append([i, point[1], point[2]])
+            continue
+        noisy_batch_x += create_anomaly(traj_acc, level, prob, selected_idx, i)
 
-    for idx, traj in enumerate(batch_x):
+        i += 1
+        current_id = point[0]
+        traj_acc = [[i, point[1], point[2]]]
 
-        anomaly_len = int(len(traj) * prob)
-        anomaly_st_loc = np.random.randint(1, len(traj) - anomaly_len - 1)
-
-        if idx in selected_idx:
-            anomaly_ed_loc = anomaly_st_loc + anomaly_len
-
-            p_traj = traj[:anomaly_st_loc] + [perturb_point(p, level) for p in
-                                              traj[anomaly_st_loc:anomaly_ed_loc]] + traj[anomaly_ed_loc:]
-
-            dis = max(distance(convert(traj[anomaly_st_loc][0]), convert(traj[anomaly_ed_loc][0])), 1)
-            time_offset = (level * 2) / dis
-
-            p_traj = perturb_time(p_traj, anomaly_st_loc, anomaly_ed_loc, time_offset, interval)
-
-        else:
-            p_traj = traj
-
-        p_traj = p_traj[:int(len(p_traj) * args.obeserved_ratio)]
-        noisy_batch_x.append(p_traj)
+    noisy_batch_x += create_anomaly(traj_acc, level, prob, selected_idx, i)
 
     return noisy_batch_x
 
+def create_anomaly(traj, level, prob, selected_idx, idx):
+    if idx in selected_idx:
+        anomaly_len = int(len(traj) * prob)
+        anomaly_start_location = np.random.randint(1, len(traj) - anomaly_len - 1)
+
+        anomaly_end_location = anomaly_start_location + anomaly_len
+
+        p_traj = (traj[:anomaly_start_location]
+                  + [perturb_point(p, level) for p in traj[anomaly_start_location:anomaly_end_location]]
+                  + traj[anomaly_end_location:])
+
+        dist = max(distance(convert(traj[anomaly_start_location][0]), convert(traj[anomaly_end_location][0])), 1)
+        time_offset = (level * 2) / dist
+
+        p_traj = perturb_time(p_traj, anomaly_start_location, anomaly_end_location, time_offset, interval)
+    else:
+        p_traj = traj
+
+    return p_traj[:int(len(p_traj) * args.obeserved_ratio)]
+
 
 def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=args.fraction):
-    traj_num = len(trajs)
+    unique_ids = np.unique(trajs[:, 0]) # sparse ids
+    traj_num = len(unique_ids)
+
     selected_idx = np.random.randint(0, traj_num, size=int(traj_num * ratio))
     new_trajs = perturb_batch(trajs, level, point_prob, selected_idx)
     return new_trajs, selected_idx
@@ -94,53 +110,42 @@ def generate_outliers(trajs, ratio=args.ratio, level=args.distance, point_prob=a
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    print("=========================")
-    print("Dataset: " + args.dataset)
-    print("d = {}".format(args.distance) + ", " + chr(945) + " = {}".format(args.fraction) + ", "
-          + chr(961) + " = {}".format(args.obeserved_ratio))
+    logger = get_logger(f"logs/{args.dataset}.log")
+    logger.info("=========================")
+    logger.info(f"Dataset: {args.dataset}")
+    logger.info(f"d = {args.distance}, {chr(945)} = {args.fraction}, {chr(961)} = {args.obeserved_ratio}")
 
+    with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
+        (lat_grid_num, lon_grid_num) = tuple(json.load(f))
+
+    interval = 10
     if args.dataset == 'porto':
-        map_size = (51, 119)
-    elif args.dataset == 'cd':
-        map_size = (167, 154)
+        interval = 15
 
-    data = np.load("./data/{}/test_data_init.npy".format(args.dataset), allow_pickle=True)
+    data = np.load(f"./data/{args.dataset}/test_init.npy", allow_pickle=True)
     outliers_trajs, outliers_idx = generate_outliers(data)
     outliers_trajs = np.array(outliers_trajs, dtype=object)
     outliers_idx = np.array(outliers_idx)
 
-    np.save("./data/{}/outliers_data_init_{}_{}_{}.npy".format(args.dataset, args.distance, args.fraction,
-                                                               args.obeserved_ratio), outliers_trajs)
-    np.save("./data/{}/outliers_idx_init_{}_{}_{}.npy".format(args.dataset, args.distance, args.fraction,
-                                                              args.obeserved_ratio), outliers_idx)
+    logger.info("Generating init outliers")
 
-    if args.dataset == 'cd':
+    np.save(f"./data/{args.dataset}/outliers_data_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
+    np.save(f"./data/{args.dataset}/outliers_idx_init_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
 
-        traj_path = "../datasets/chengdu"
-        path_list = os.listdir(traj_path)
-        path_list.sort(key=lambda x: x.split('.'))
+    logger.info("Generating evolving outliers")
 
-        for file in path_list[3: 10]:
-            if file[-4:] == '.txt':
-                data = np.load("./data/{}/test_data_{}.npy".format(args.dataset, file[:8]),
-                               allow_pickle=True)
-                outliers_trajs, outliers_idx = generate_outliers(data)
-                outliers_trajs = np.array(outliers_trajs, dtype=object)
-                outliers_idx = np.array(outliers_idx)
+    files = os.listdir(f"./data/{args.dataset}/test/")
+    i=0
+    for file in files:
+        data = np.load(f"./data/{args.dataset}/test/{i}.npy", allow_pickle=True)
+        outliers_trajs, outliers_idx = generate_outliers(data)
+        outliers_trajs = np.array(outliers_trajs, dtype=object)
+        outliers_idx = np.array(outliers_idx)
 
-                np.save("./data/{}/outliers_data_{}_{}_{}_{}.npy".format(args.dataset, file[:8], args.distance,
-                                                                args.fraction, args.obeserved_ratio), outliers_trajs)
-                np.save("./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, file[:8], args.distance,
-                                                                    args.fraction, args.obeserved_ratio), outliers_idx)
+        np.save(
+            f"./data/{args.dataset}/outliers_data_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_trajs)
+        np.save(
+            f"./data/{args.dataset}/outliers_idx_{i}_{args.distance}_{args.fraction}_{args.obeserved_ratio}.npy", outliers_idx)
+        i+=1
 
-    if args.dataset == 'porto':
-        for i in range(1, 11):
-            data = np.load("./data/{}/test_data_{}.npy".format(args.dataset, i), allow_pickle=True)
-            outliers_trajs, outliers_idx = generate_outliers(data)
-            outliers_trajs = np.array(outliers_trajs, dtype=object)
-            outliers_idx = np.array(outliers_idx)
-
-            np.save("./data/{}/outliers_data_{}_{}_{}_{}.npy".format(args.dataset, i, args.distance,
-                                                                args.fraction, args.obeserved_ratio), outliers_trajs)
-            np.save("./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, i, args.distance,
-                                                                    args.fraction, args.obeserved_ratio), outliers_idx)
+    logger.info("Done generating outliers data")

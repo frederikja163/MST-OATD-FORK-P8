@@ -1,1 +1,8 @@
-datasets/
+datasets
+data
+.idea
+logs
+models
+probs
+/preprocess/__pycache__
+/__pycache__

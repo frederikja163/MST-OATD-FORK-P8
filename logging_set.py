@@ -1,5 +1,5 @@
+import locale
 import logging
-
 
 def get_logger(filename, verbosity=1, name=None):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}

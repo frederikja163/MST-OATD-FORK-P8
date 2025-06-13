@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -7,16 +8,15 @@ from sklearn.mixture import GaussianMixture
 from torch.utils.data import DataLoader
 
 from config import args
-from mst_oatd_trainer import train_mst_oatd, MyDataset, seed_torch, collate_fn
+from mst_oatd_trainer import train_mst_oatd, TrajectoryDataset, seed_torch, collate_fn
 from train_labels import Linear_Model
 
 
 def get_z(trajs):
-    data = MyDataset(trajs)
+    data = TrajectoryDataset(trajs)
     loader = DataLoader(dataset=data, batch_size=args.batch_size, shuffle=False,
                         collate_fn=collate_fn, num_workers=4)
-    MST_OATD_U.train_loader = loader
-    return MST_OATD_U.get_hidden().cpu()
+    return MST_OATD_U.get_hidden(loader).cpu()
 
 
 def load_gmm():
@@ -73,22 +73,19 @@ def update_data(origin_trajs, train_trajs, cats_sample):
 
 
 def train_update(train_trajs, test_trajs, labels, i):
-    train_data = MyDataset(train_trajs)
-    test_data = MyDataset(test_trajs)
+    train_data = TrajectoryDataset(train_trajs)
 
     train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True,
                               collate_fn=collate_fn, num_workers=8)
+
+    test_data = TrajectoryDataset(test_trajs)
     outliers_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False,
                                  collate_fn=collate_fn, num_workers=8)
 
-    MST_OATD.train_loader = train_loader
-    MST_OATD.outliers_loader = outliers_loader
-    MST_OATD.labels = labels
-
     pr_auc = []
     for epoch in range(args.epochs):
-        MST_OATD.train(epoch)
-        results = MST_OATD.detection()
+        MST_OATD.train(train_loader, epoch)
+        results = MST_OATD.detection(outliers_loader, labels)
         pr_auc.append(results)
     results = "%.4f" % max(pr_auc)
     print("File {} PR_AUC:".format(i), results)
@@ -96,14 +93,11 @@ def train_update(train_trajs, test_trajs, labels, i):
 
 
 def test_update(test_trajs, labels, i):
-    test_data = MyDataset(test_trajs)
+    test_data = TrajectoryDataset(test_trajs)
     outliers_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False,
                                  collate_fn=collate_fn, num_workers=8)
 
-    MST_OATD_U.outliers_loader = outliers_loader
-    MST_OATD_U.labels = labels
-
-    pr_auc = MST_OATD_U.detection()
+    pr_auc = MST_OATD_U.detection(outliers_loader, labels)
     results = "%.4f" % pr_auc
     print("File {} PR_AUC:".format(i), results)
     return pr_auc
@@ -123,7 +117,7 @@ def get_category(trajs):
 
 def main():
     random.seed(1234)
-    train_trajs = np.load('./data/{}/train_data_init.npy'.format(args.dataset),
+    train_trajs = np.load('./data/{}/train_init.npy'.format(args.dataset),
                           allow_pickle=True)[-args.train_num:]
 
     if args.update_mode == 'rank':
@@ -132,8 +126,11 @@ def main():
     all_pr_auc = []
 
     if args.dataset == 'porto':
-        for i in range(1, 11):
-            train_trajs_new = np.load('./data/{}/train_data_{}.npy'.format(args.dataset, i),
+        traj_path = "./data/porto/train/"
+        path_list = os.listdir(traj_path)
+        i = 0
+        for file in path_list:
+            train_trajs_new = np.load('./data/{}/train/{}.npy'.format(args.dataset, i),
                                       allow_pickle=True)
             test_trajs = np.load(
                 './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, i, args.distance, args.fraction,
@@ -167,23 +164,22 @@ def main():
                 pr_auc = test_update(test_trajs[test_index], labels[test_index], i)
 
             all_pr_auc.append(pr_auc)
+            i+=1
 
-    if args.dataset == 'cd':
-        traj_path = "../datasets/chengdu"
+    if args.dataset == 'cd' or args.dataset == 'tdrive':
+        traj_path = f"./data/{args.dataset}/train/"
         path_list = os.listdir(traj_path)
-        path_list.sort(key=lambda x: x.split('.'))
-        path_list = path_list[3: 10]
-
-        for i in range(len(path_list)):
-            train_trajs_new = np.load('./data/{}/train_data_{}.npy'.format(args.dataset, path_list[i][:8]),
+        i = 0
+        for file in path_list:
+            train_trajs_new = np.load(f"./data/{args.dataset}/train/{i}.npy",
                                       allow_pickle=True)
             print(len(train_trajs_new))
             test_trajs = np.load(
-                './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, path_list[i][:8], args.distance,
+                './data/{}/outliers_data_{}_{}_{}_{}.npy'.format(args.dataset, i, args.distance,
                                                                  args.fraction, args.obeserved_ratio),
                 allow_pickle=True)
             outliers_idx = np.load(
-                "./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, path_list[i][:8], args.distance,
+                "./data/{}/outliers_idx_{}_{}_{}_{}.npy".format(args.dataset, i, args.distance,
                                                                 args.fraction, args.obeserved_ratio),
                 allow_pickle=True)
 
@@ -222,6 +218,10 @@ def main():
                 pr_auc = test_update(test_trajs, labels, i)
 
             all_pr_auc.append(pr_auc)
+            i+=1
+
+
+
     print('------------------------')
     results = "%.4f" % (sum(all_pr_auc) / len(all_pr_auc))
     print('Average PR_AUC:', results)
@@ -234,12 +234,25 @@ if __name__ == "__main__":
     print("Dataset:", args.dataset)
     print("Mode:", args.update_mode)
 
+    with open(f'./data/{args.dataset}/metadata.json', 'r') as f:
+        (lat_grid_num, lon_grid_num) = tuple(json.load(f))
+
+    time_interval = 10
+    num_days = 60
+
     if args.dataset == 'porto':
-        s_token_size = 51 * 119
-        t_token_size = 5760
+        time_interval = 15
+        num_days = 60
     elif args.dataset == 'cd':
-        s_token_size = 167 * 154
-        t_token_size = 8640
+        time_interval = 10
+        num_days = 60
+    elif args.dataset == 'tdrive':
+        time_interval = 600
+        num_days = 10
+
+    s_token_size = lat_grid_num * lon_grid_num
+    seconds_a_day = 24 * 60 * 60
+    t_token_size = (seconds_a_day // time_interval) * num_days
 
     gmm = load_gmm()
 
