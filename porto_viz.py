@@ -1,8 +1,7 @@
 import folium
 import pandas as pd
-import ast  # For safely evaluating the string as a list
+import ast
 
-# Load the data
 df = pd.read_csv("datasets/porto/test.csv")
 
 # Convert the POLYLINE string to actual coordinates
@@ -20,8 +19,8 @@ porto_coords = [41.1579, -8.6291]
 m = folium.Map(location=porto_coords, zoom_start=14, tiles='OpenStreetMap')
 
 # Add trajectories for all trips (or just the first few for visualization)
-for idx, row in df.head(10000).iterrows():  # Just plotting first 10 trips for clarity
-    if len(row['coordinates']) > 1:  # Only plot if there are valid coordinates
+for idx, row in df.head(100).iterrows():  # Number of trips
+    if len(row['coordinates']) > 1:  
         # Convert coordinates to [lat, lon] format for Folium
         points = [[lat, lon] for [lon, lat] in row['coordinates']]
         
@@ -55,6 +54,5 @@ for idx, row in df.head(10000).iterrows():  # Just plotting first 10 trips for c
             popup=f"End of Trip {row['TRIP_ID']}"
         ).add_to(m)
 
-# Save or display the map
+
 m.save('porto_taxi_trips.html')
-m  # Display in Jupyter notebook (if applicable)
