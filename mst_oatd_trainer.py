@@ -249,12 +249,39 @@ class train_mst_oatd:
                           "model_state_dict_t": self.MST_OATD_T.state_dict()}
             torch.save(checkpoint, self.path_checkpoint)
 
+<<<<<<< Updated upstream
     def detection(self):
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    def detection(self, return_outliers=True, top_k=10, output_dir="outliers"):
+=======
+    def detection(self):
+>>>>>>> parent of 261000e (s)
+>>>>>>> Stashed changes
 
         self.MST_OATD_S.eval()
         all_likelihood_s = []
         self.MST_OATD_T.eval()
         all_likelihood_t = []
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+        all_trajs = []  # Store trajectories
+        all_times = []  # Store timestamps (if needed)
+        all_seq_lengths = []  # Store sequence lengths (if needed)
+=======
+def detection(self, save_outliers=False, threshold=None, top_k=None):
+    self.MST_OATD_S.eval()
+    self.MST_OATD_T.eval()
+    all_likelihood_s = []
+    all_likelihood_t = []
+    all_trajs = []      # Store trajectories
+    all_times = []      # Store timestamps
+    all_seq_lengths = [] # Store sequence lengths
+=======
+>>>>>>> parent of 261000e (s)
+>>>>>>> Stashed changes
 
         with torch.no_grad():
 
@@ -280,17 +307,118 @@ class train_mst_oatd:
                     likelihood_t = torch.exp(
                         torch.sum(mask * (likelihood_t.reshape(batch_size, -1)), dim=-1) / torch.sum(mask, 1))
 
+<<<<<<< Updated upstream
                     c_likelihood_s.append(likelihood_s.unsqueeze(0))
                     c_likelihood_t.append(likelihood_t.unsqueeze(0))
+=======
+                c_likelihood_s.append(likelihood_s.unsqueeze(0))
+                c_likelihood_t.append(likelihood_t.unsqueeze(0))
+
+            all_likelihood_s.append(torch.cat(c_likelihood_s).max(0)[0])
+            all_likelihood_t.append(torch.cat(c_likelihood_t).max(0)[0])
+
+<<<<<<< HEAD
+    # Combine results
+    likelihood_s = torch.cat(all_likelihood_s, dim=0)
+    likelihood_t = torch.cat(all_likelihood_t, dim=0)
+    anomaly_scores = 1 - (likelihood_s * likelihood_t)  # Higher = more anomalous
+    
+    print('--------------')
+    print("likelihood_s: " + likelihood_s)
+    print("likelihood_s: " + likelihood_t)
+    print('--------------')
+
+<<<<<<< Updated upstream
+                if return_outliers:
+                    all_trajs.append(trajs)
+                    all_times.append(times)
+                    all_seq_lengths.append(seq_lengths)
+>>>>>>> Stashed changes
 
                 all_likelihood_s.append(torch.cat(c_likelihood_s).max(0)[0])
                 all_likelihood_t.append(torch.cat(c_likelihood_t).max(0)[0])
 
+=======
+>>>>>>> parent of 261000e (s)
         likelihood_s = torch.cat(all_likelihood_s, dim=0)
         likelihood_t = torch.cat(all_likelihood_t, dim=0)
 
+<<<<<<< Updated upstream
         pr_auc = auc_score(self.labels, (1 - likelihood_s * likelihood_t).cpu().detach().numpy())
         return pr_auc
+=======
+<<<<<<< HEAD
+        pr_auc = auc_score(self.labels, anomaly_scores)
+            
+        if return_outliers:
+            # Create output directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Generate a timestamped filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = os.path.join(output_dir, f"outliers_{timestamp}.csv")
+            
+            # Prepare data for CSV
+            data = {
+                "trajectory_idx": range(len(anomaly_scores)),  # Index of each trajectory
+                "anomaly_score": anomaly_scores,
+                "is_top_outlier": [i in np.argsort(anomaly_scores)[-top_k:][::-1] for i in range(len(anomaly_scores))],  # Boolean flag
+                "trajectory_data": [str(traj) for traj in all_trajs],  # Convert to string for CSV
+                "timestamps": [str(time) for time in all_times],
+                "sequence_lengths": all_seq_lengths,
+            }
+            
+            # Convert to DataFrame and save
+            df = pd.DataFrame(data)
+            df.to_csv(output_file, index=False)
+            
+            print(f"Results saved to: {output_file}")
+
+            return pr_auc
+=======
+
+    # Compute PR-AUC
+    pr_auc = auc_score(self.labels, anomaly_scores.cpu().detach().numpy())
+
+    # Save outliers if requested
+    if save_outliers:
+        # Combine saved data
+        trajs = torch.cat(all_trajs, dim=0)
+        times = torch.cat(all_times, dim=0)
+        seq_lengths = torch.cat(all_seq_lengths, dim=0)
+
+        # Select outliers
+        if threshold is not None:
+            outlier_mask = (anomaly_scores > threshold)
+        elif top_k is not None:
+            _, outlier_indices = torch.topk(anomaly_scores, top_k)
+            outlier_mask = torch.zeros_like(anomaly_scores, dtype=bool)
+            outlier_mask[outlier_indices] = True
+        else:
+            raise ValueError("Either threshold or top_k must be specified")
+
+        # Extract outliers
+        outlier_trajs = trajs[outlier_mask]
+        outlier_times = times[outlier_mask]
+        outlier_seq_lengths = seq_lengths[outlier_mask]
+        outlier_scores = anomaly_scores[outlier_mask]
+
+        # Save to disk (e.g., as a dictionary)
+        outliers = {
+            'trajectories': outlier_trajs.cpu().numpy(),
+            'times': outlier_times.cpu().numpy(),
+            'seq_lengths': outlier_seq_lengths.cpu().numpy(),
+            'scores': outlier_scores.cpu().numpy()
+        }
+        torch.save(outliers, 'outliers.pt')  # or np.save('outliers.npy', outliers)
+
+    return pr_auc
+>>>>>>> Stashed changes
+=======
+        pr_auc = auc_score(self.labels, (1 - likelihood_s * likelihood_t).cpu().detach().numpy())
+        return pr_auc
+>>>>>>> parent of 261000e (s)
+>>>>>>> Stashed changes
 
     def gaussian_pdf_log(self, x, mu, log_var):
         return -0.5 * (torch.sum(np.log(np.pi * 2) + log_var + (x - mu).pow(2) / torch.exp(log_var), 1))
